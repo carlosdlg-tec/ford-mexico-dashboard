@@ -119,8 +119,8 @@ h1, h2, h3, h4, .ct {{font-family: {SERIF};}}
 .legend-inline i {{display: inline-block; width: 12px; height: 12px; border-radius: 0; margin-right: 6px; vertical-align: -1px;}}
 div[data-testid="stMetric"] {{background: #fff; border-radius: 0 !important; border: 0 !important; border-top: 3px solid {NAVY} !important;
   box-shadow: none; padding-top: 10px;}}
-div[data-testid="stMetricValue"] {{color: {NAVY}; font-weight: 600; font-family: {SERIF};}}
-div[data-testid="stMetricLabel"] p {{color: {MUTED}; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700;}}
+div[data-testid="stMetricValue"], div[data-testid="stMetricValue"] * {{color: {NAVY}; font-weight: 600; font-family: {SERIF} !important;}}
+div[data-testid="stMetricLabel"], div[data-testid="stMetricLabel"] * {{color: {MUTED}; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700;}}
 .stTabs [data-baseweb="tab-list"] {{gap: 4px; border-bottom: 1px solid {GRID};}}
 .stTabs [data-baseweb="tab"] {{font-size: 15px; font-weight: 700; padding: 10px 16px;}}
 div[data-testid="stPlotlyChart"] {{border-top: 1px solid {GRID}; padding-top: 4px;}}
