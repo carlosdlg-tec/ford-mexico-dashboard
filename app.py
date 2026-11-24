@@ -546,7 +546,9 @@ with t2:
     dA, dB = df[df["brand"] == A], df[df["brand"] == B]
     segA, segB = pivot(dA, "segment"), pivot(dB, "segment")
     used = [s for s in SEG_ORDER if (s in segA and segA.loc[Y0:Y1, s].sum() > 0) or (s in segB and segB.loc[Y0:Y1, s].sum() > 0)]
-    segs = cc[2].multiselect("Segments", used, default=used)
+    seg = cc[2].selectbox("Car segment", used, index=used.index("SUVs") if "SUVs" in used else 0,
+                          key="cmp_seg") if used else None
+    segs = [seg] if seg else []
     COL_A, COL_B = FORD, RIVAL
 
     uA, uB = by_year(dA), by_year(dB)
@@ -571,29 +573,22 @@ with t2:
         fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(rangemode="tozero")
         show(fig)
     with b:
-        chart_title("Units by car segment by year", f"{A} vs {B} · each panel on its own scale")
-        st.html(f"""<div class="legend-inline"><span><i style="background:{COL_A}"></i>{A}</span>
-          <span><i style="background:{COL_B}"></i>{B}</span></div>""")
-        if not segs:
-            st.info("Select at least one segment.")
+        chart_title(f"Units by car segment by year · {seg or '—'}", f"{A} vs {B}")
+        if not seg:
+            st.info("Neither company sold in any segment during this period.")
         else:
-            ncol = min(3, len(segs))
-            nrow = int(np.ceil(len(segs) / ncol))
-            fig = make_subplots(rows=nrow, cols=ncol, subplot_titles=segs, shared_xaxes=True,
-                                vertical_spacing=0.16 if nrow > 1 else 0.1, horizontal_spacing=0.07)
-            for i, sname in enumerate(segs):
-                r, cidx = i // ncol + 1, i % ncol + 1
-                for name, sp, col in ((A, segA, COL_A), (B, segB, COL_B)):
-                    s = sp[sname].loc[yrs] if sname in sp else pd.Series(0, index=yrs)
-                    fig.add_scatter(x=yrs, y=s.values, name=name, legendgroup=name, showlegend=False,
-                                    mode="lines", line=dict(color=col, width=2.2), row=r, col=cidx,
-                                    hovertemplate=f"{name} · {sname} %{{x}}: %{{y:,.0f}}<extra></extra>")
-                bands(fig, labels=False, row=r, col=cidx)
-            style(fig, 210 * nrow + 40, legend=False, hover="closest")
-            fig.update_xaxes(tickmode="array", tickvals=[y for y in yrs if (y - Y0) % 2 == 0 or y == Y1],
-                             range=[Y0 - 0.3, Y1 + 0.3], tickfont=dict(size=10.5))
-            fig.update_yaxes(rangemode="tozero", tickfont=dict(size=10.5), tickformat="~s")
-            fig.update_annotations(font=dict(size=13, color=INK, family=FONT))
+            fig = go.Figure()
+            ends, top = [], 0
+            for name, sp, col in ((A, segA, COL_A), (B, segB, COL_B)):
+                s = sp[seg].loc[yrs] if seg in sp else pd.Series(0, index=yrs)
+                fig.add_scatter(x=yrs, y=s.values, name=name, mode="lines+markers", line=dict(color=col, width=2.5),
+                                marker=dict(size=8, color=col, line=dict(color="white", width=2)),
+                                hovertemplate=f"{name} · {seg}: %{{y:,.0f}}<extra></extra>")
+                ends.append((Y1, s[Y1], fmt_k(s[Y1])))
+                top = max(top, s.max())
+            end_labels(fig, ends, 420, top, xshift=26, bold=True)
+            style(fig, 420); year_axis(fig, Y0, Y1, step=2 if N > 6 else 1); bands(fig)
+            fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(rangemode="tozero")
             show(fig)
 
     cmp = pd.DataFrame({A: uA, B: uB}).loc[Y0:Y1]
