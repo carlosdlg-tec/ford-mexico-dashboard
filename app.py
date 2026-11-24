@@ -43,7 +43,6 @@ POS, NEG = "#2251FF", "#D64550"  # diverging poles (growth / decline)
 INK, INK2, MUTED = "#051C2C", "#36424D", "#6B7682"
 GRID, AXIS = "#E6E8EB", "#BCC2C8"
 FONT = 'Arial, "Helvetica Neue", Helvetica, sans-serif'
-SERIF = '"Source Serif 4", Georgia, "Times New Roman", serif'
 BAND_COVID = "rgba(5,28,44,0.08)"
 BAND_CHIP = "rgba(5,28,44,0.04)"
 
@@ -87,31 +86,29 @@ PRESETS = {
 
 CSS = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap');
 .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 1320px;}}
-html, body, [class*="css"], p, li, div, label, button, input {{font-family: {FONT};}}
-h1, h2, h3, h4, .ct {{font-family: {SERIF};}}
-/* Hero: flat deep navy, thin accent rule, serif headline. Ford oval sits on the right. */
-.hero {{border-radius: 0; padding: 30px 34px 26px; color: #fff; margin-bottom: 6px;
-  background: {NAVY}; border-top: 4px solid {FORD};}}
+html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]) {{font-family: {FONT} !important;}}
+/* Hero colours are taken from the Ford oval: deep navy #08142E -> #17326E -> #0D69A9, highlight #4CA9E3, chrome rim #D3D2D2 */
+.hero {{border-radius: 18px; padding: 30px 34px 26px; color: #fff; margin-bottom: 6px;
+  border: 1px solid rgba(211,210,210,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+  background: radial-gradient(520px 260px at 88% 18%, rgba(76,169,227,.38), transparent 70%),
+              linear-gradient(120deg, #08142E 0%, #17326E 52%, #0D69A9 100%);}}
 .hero-top {{display: flex; justify-content: space-between; align-items: center; gap: 24px;}}
-.hero-logo {{width: clamp(110px, 14vw, 170px); height: auto; flex-shrink: 0;}}
-.hero .eyebrow {{letter-spacing: .06em; font-size: 13px; color: {CYAN}; font-weight: 700; font-family: {FONT};}}
-.hero h1 {{font-family: {SERIF}; font-size: clamp(30px, 3.8vw, 46px); line-height: 1.1; margin: 10px 0 8px;
-  color: #fff; font-weight: 600; padding: 0; letter-spacing: -.005em;}}
-.hero .sub {{font-size: 16px; color: #C5CDD4; margin: 0;}}
-.hero-stats {{display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; margin-top: 26px;
-  border-top: 1px solid rgba(255,255,255,.18);}}
-.hero-stat {{padding: 14px 18px 4px; border-left: 1px solid rgba(255,255,255,.18);}}
-.hero-stat:first-child {{border-left: 0; padding-left: 0;}}
-.hero-stat .lbl {{font-size: 11.5px; color: #9AA6B2; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;}}
-.hero-stat .val {{font-family: {SERIF}; font-size: 30px; font-weight: 600; margin-top: 4px; color: #fff;}}
-.hero-stat .val small {{font-family: {FONT}; font-size: 13.5px; color: #9AA6B2; font-weight: 400;}}
-@media (max-width: 640px) {{.hero-top {{flex-direction: column-reverse; align-items: flex-start;}} .hero-logo {{width: 110px;}}
-  .hero-stat {{border-left: 0; padding-left: 0; border-bottom: 1px solid rgba(255,255,255,.12);}}}}
+.hero-logo {{width: clamp(110px, 15vw, 190px); height: auto; flex-shrink: 0;
+  filter: drop-shadow(0 6px 14px rgba(5,17,37,.55));}}
+.hero .eyebrow {{letter-spacing: .2em; text-transform: uppercase; font-size: 12px; color: #7CC3EE; font-weight: 600;}}
+.hero h1 {{font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; margin: 8px 0 6px; color: #fff; font-weight: 750; padding: 0;}}
+.hero .sub {{font-size: 15.5px; color: #D3E3F3; margin: 0;}}
+.hero-stats {{display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 22px;}}
+.hero-stat {{background: rgba(8,20,46,.32); border: 1px solid rgba(211,210,210,.22); border-top: 2px solid #4CA9E3;
+  border-radius: 12px; padding: 12px 16px;}}
+.hero-stat .lbl {{font-size: 11.5px; color: #B9D8F0; text-transform: uppercase; letter-spacing: .08em;}}
+.hero-stat .val {{font-size: 26px; font-weight: 700; margin-top: 2px; color: #fff;}}
+.hero-stat .val small {{font-size: 14px; color: #B9D8F0; font-weight: 500;}}
+@media (max-width: 640px) {{.hero-top {{flex-direction: column-reverse; align-items: flex-start;}} .hero-logo {{width: 110px;}}}}
 .sec {{display: flex; align-items: baseline; gap: 12px; margin: 30px 0 4px; padding-top: 14px; border-top: 2px solid {NAVY};}}
 .sec .num {{color: {FORD}; font-weight: 700; font-size: 14px; letter-spacing: .04em; font-family: {FONT};}}
-.sec h3 {{margin: 0; padding: 0; font-size: 26px; color: {INK}; font-weight: 600; font-family: {SERIF};}}
+.sec h3 {{margin: 0; padding: 0; font-size: 26px; color: {INK}; font-weight: 600;}}
 .sec-sub {{color: {MUTED}; font-size: 14px; margin: 2px 0 12px 0;}}
 .ct {{font-size: 18px; font-weight: 600; color: {INK}; margin: 8px 0 0;}}
 .cs {{font-size: 12.5px; color: {MUTED}; margin: 2px 0 4px;}}
@@ -119,7 +116,7 @@ h1, h2, h3, h4, .ct {{font-family: {SERIF};}}
 .legend-inline i {{display: inline-block; width: 12px; height: 12px; border-radius: 0; margin-right: 6px; vertical-align: -1px;}}
 div[data-testid="stMetric"] {{background: #fff; border-radius: 0 !important; border: 0 !important; border-top: 3px solid {NAVY} !important;
   box-shadow: none; padding-top: 10px;}}
-div[data-testid="stMetricValue"], div[data-testid="stMetricValue"] * {{color: {NAVY}; font-weight: 600; font-family: {SERIF} !important;}}
+div[data-testid="stMetricValue"], div[data-testid="stMetricValue"] * {{color: {NAVY}; font-weight: 600; }}
 div[data-testid="stMetricLabel"], div[data-testid="stMetricLabel"] * {{color: {MUTED}; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700;}}
 .stTabs [data-baseweb="tab-list"] {{gap: 4px; border-bottom: 1px solid {GRID};}}
 .stTabs [data-baseweb="tab"] {{font-size: 15px; font-weight: 700; padding: 10px 16px;}}
@@ -127,11 +124,11 @@ div[data-testid="stPlotlyChart"] {{border-top: 1px solid {GRID}; padding-top: 4p
 .reco {{background: #fff; border: 1px solid {GRID}; border-top: 4px solid var(--c); border-radius: 0; padding: 18px 20px 6px; min-height: 345px; margin-bottom: 8px;}}
 .reco .tag {{display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   color: var(--c); background: transparent; border-radius: 0; padding: 0;}}
-.reco h4 {{font-family: {SERIF}; font-size: 21px; color: {INK}; margin: 8px 0 2px; padding: 0; line-height: 1.2; font-weight: 600;}}
+.reco h4 {{font-size: 21px; color: {INK}; margin: 8px 0 2px; padding: 0; line-height: 1.2; font-weight: 600;}}
 .reco .why {{font-size: 13.5px; color: {MUTED}; margin: 0 0 12px;}}
 .reco .kpis {{display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;}}
 .reco .k {{background: #F4F5F6; border-radius: 0; padding: 9px 10px;}}
-.reco .k b {{display: block; font-family: {SERIF}; font-size: 21px; font-weight: 600; color: {NAVY};}}
+.reco .k b {{display: block; font-size: 21px; font-weight: 600; color: {NAVY};}}
 .reco .k span {{font-size: 11.5px; color: {MUTED}; line-height: 1.25; display: block;}}
 .reco .move {{font-size: 13.5px; color: {INK2}; border-top: 1px solid {GRID}; padding: 10px 0 8px; margin: 0;}}
 .reco .move b {{color: {INK};}}
