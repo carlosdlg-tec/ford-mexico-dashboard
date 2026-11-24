@@ -675,7 +675,7 @@ with t3:
     a, b = st.columns([3, 2], gap="large")
     eyrs = [y for y in yrs if y >= 2016]
     with a:
-        chart_title("Electrified sales by technology", "Hybrids (HEV) carry the volume")
+        chart_title("Electrified sales by technology", "Units sold by EV segment")
         fig = go.Figure()
         for tname, col in TECH_COL.items():
             fig.add_bar(x=eyrs, y=tech.loc[eyrs, tname], name=tname, marker=dict(color=col, line=dict(color="white", width=1.5)),
