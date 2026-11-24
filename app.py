@@ -32,23 +32,25 @@ DATA = next((p / FILE for p in (HERE, HERE.parent, HERE / "data") if (p / FILE).
 LOGO = HERE / "ford_logo.svg"  # Ford oval, Wikimedia Commons; trademark of Ford Motor Company
 LOGO_SRC = f"data:image/svg+xml;base64,{base64.b64encode(LOGO.read_bytes()).decode()}" if LOGO.exists() else ""
 
-# Ford palette
-NAVY = "#00095B"        # Ford Blue: headings, hero
-FORD = "#1F4FB8"        # Ford as a data series (protagonist)
-FORD_LT = "#9DBBF2"     # earlier-year / secondary Ford shade
-RIVAL = "#7A8499"       # comparison company
-CONTEXT = "#C9CFDA"     # everyone else
-POS, NEG = "#1F4FB8", "#C2413A"  # diverging poles (growth / decline)
-INK, INK2, MUTED = "#0B1530", "#3E4A66", "#7A849B"
-GRID, AXIS = "#E7EAF1", "#C9CFDA"
-FONT = 'Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif'
-BAND_COVID = "rgba(0,9,91,0.09)"
-BAND_CHIP = "rgba(0,9,91,0.045)"
+# Consulting palette: deep navy, one electric-blue accent, neutral greys
+NAVY = "#051C2C"        # deep navy: headings, hero, KPI values
+FORD = "#2251FF"        # electric blue: Ford as a data series (protagonist)
+FORD_LT = "#99B0FF"     # earlier-year / secondary Ford shade
+CYAN = "#00A9F4"        # secondary accent (rules, highlights)
+RIVAL = "#8C959F"       # comparison company
+CONTEXT = "#D3D6DA"     # everyone else
+POS, NEG = "#2251FF", "#D64550"  # diverging poles (growth / decline)
+INK, INK2, MUTED = "#051C2C", "#36424D", "#6B7682"
+GRID, AXIS = "#E6E8EB", "#BCC2C8"
+FONT = 'Arial, "Helvetica Neue", Helvetica, sans-serif'
+SERIF = '"Source Serif 4", Georgia, "Times New Roman", serif'
+BAND_COVID = "rgba(5,28,44,0.08)"
+BAND_CHIP = "rgba(5,28,44,0.04)"
 
 # Segment identity colors (validated: CVD-safe adjacent order, see README)
 SEG_ORDER = ["SUVs", "Pickups", "Minivans", "Luxury", "Subcompact", "Sports", "Compact"]
 SEG_COL = {
-    "SUVs": "#1F4FB8", "Pickups": "#12A0B0", "Minivans": "#D98E04", "Luxury": "#C2508F",
+    "SUVs": "#2251FF", "Pickups": "#12A0B0", "Minivans": "#D98E04", "Luxury": "#C2508F",
     "Subcompact": "#6FA0F0", "Sports": "#C2413A", "Compact": "#8A63C9",
 }
 SEG_EN = {
@@ -85,49 +87,53 @@ PRESETS = {
 
 CSS = f"""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap');
 .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 1320px;}}
-html, body, [class*="css"], p, li, div, h1, h2, h3, h4 {{font-family: {FONT};}}
-/* Hero colours are taken from the Ford oval: deep navy #08142E -> #17326E -> #0D69A9, highlight #4CA9E3, chrome rim #D3D2D2 */
-.hero {{border-radius: 18px; padding: 30px 34px 26px; color: #fff; margin-bottom: 6px;
-  border: 1px solid rgba(211,210,210,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
-  background: radial-gradient(520px 260px at 88% 18%, rgba(76,169,227,.38), transparent 70%),
-              linear-gradient(120deg, #08142E 0%, #17326E 52%, #0D69A9 100%);}}
+html, body, [class*="css"], p, li, div, label, button, input {{font-family: {FONT};}}
+h1, h2, h3, h4, .ct {{font-family: {SERIF};}}
+/* Hero: flat deep navy, thin accent rule, serif headline. Ford oval sits on the right. */
+.hero {{border-radius: 0; padding: 30px 34px 26px; color: #fff; margin-bottom: 6px;
+  background: {NAVY}; border-top: 4px solid {FORD};}}
 .hero-top {{display: flex; justify-content: space-between; align-items: center; gap: 24px;}}
-.hero-logo {{width: clamp(110px, 15vw, 190px); height: auto; flex-shrink: 0;
-  filter: drop-shadow(0 6px 14px rgba(5,17,37,.55));}}
-.hero .eyebrow {{letter-spacing: .2em; text-transform: uppercase; font-size: 12px; color: #7CC3EE; font-weight: 600;}}
-.hero h1 {{font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; margin: 8px 0 6px; color: #fff; font-weight: 750; padding: 0;}}
-.hero .sub {{font-size: 15.5px; color: #D3E3F3; margin: 0;}}
-.hero-stats {{display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 22px;}}
-.hero-stat {{background: rgba(8,20,46,.32); border: 1px solid rgba(211,210,210,.22); border-top: 2px solid #4CA9E3;
-  border-radius: 12px; padding: 12px 16px;}}
-.hero-stat .lbl {{font-size: 11.5px; color: #B9D8F0; text-transform: uppercase; letter-spacing: .08em;}}
-.hero-stat .val {{font-size: 26px; font-weight: 700; margin-top: 2px; color: #fff;}}
-.hero-stat .val small {{font-size: 14px; color: #B9D8F0; font-weight: 500;}}
-@media (max-width: 640px) {{.hero-top {{flex-direction: column-reverse; align-items: flex-start;}} .hero-logo {{width: 110px;}}}}
-.sec {{display: flex; align-items: center; gap: 12px; margin: 26px 0 4px;}}
-.sec .num {{background: {NAVY}; color: #fff; font-weight: 700; font-size: 13px; border-radius: 8px; padding: 4px 9px;}}
-.sec h3 {{margin: 0; padding: 0; font-size: 22px; color: {INK}; font-weight: 700;}}
-.sec-sub {{color: {MUTED}; font-size: 14px; margin: 2px 0 10px 0;}}
-.ct {{font-size: 15.5px; font-weight: 650; color: {INK}; margin: 6px 0 0;}}
-.cs {{font-size: 12.5px; color: {MUTED}; margin: 0 0 2px;}}
+.hero-logo {{width: clamp(110px, 14vw, 170px); height: auto; flex-shrink: 0;}}
+.hero .eyebrow {{letter-spacing: .06em; font-size: 13px; color: {CYAN}; font-weight: 700; font-family: {FONT};}}
+.hero h1 {{font-family: {SERIF}; font-size: clamp(30px, 3.8vw, 46px); line-height: 1.1; margin: 10px 0 8px;
+  color: #fff; font-weight: 600; padding: 0; letter-spacing: -.005em;}}
+.hero .sub {{font-size: 16px; color: #C5CDD4; margin: 0;}}
+.hero-stats {{display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; margin-top: 26px;
+  border-top: 1px solid rgba(255,255,255,.18);}}
+.hero-stat {{padding: 14px 18px 4px; border-left: 1px solid rgba(255,255,255,.18);}}
+.hero-stat:first-child {{border-left: 0; padding-left: 0;}}
+.hero-stat .lbl {{font-size: 11.5px; color: #9AA6B2; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;}}
+.hero-stat .val {{font-family: {SERIF}; font-size: 30px; font-weight: 600; margin-top: 4px; color: #fff;}}
+.hero-stat .val small {{font-family: {FONT}; font-size: 13.5px; color: #9AA6B2; font-weight: 400;}}
+@media (max-width: 640px) {{.hero-top {{flex-direction: column-reverse; align-items: flex-start;}} .hero-logo {{width: 110px;}}
+  .hero-stat {{border-left: 0; padding-left: 0; border-bottom: 1px solid rgba(255,255,255,.12);}}}}
+.sec {{display: flex; align-items: baseline; gap: 12px; margin: 30px 0 4px; padding-top: 14px; border-top: 2px solid {NAVY};}}
+.sec .num {{color: {FORD}; font-weight: 700; font-size: 14px; letter-spacing: .04em; font-family: {FONT};}}
+.sec h3 {{margin: 0; padding: 0; font-size: 26px; color: {INK}; font-weight: 600; font-family: {SERIF};}}
+.sec-sub {{color: {MUTED}; font-size: 14px; margin: 2px 0 12px 0;}}
+.ct {{font-size: 18px; font-weight: 600; color: {INK}; margin: 8px 0 0;}}
+.cs {{font-size: 12.5px; color: {MUTED}; margin: 2px 0 4px;}}
 .legend-inline {{display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: {INK2}; margin: 4px 0 8px;}}
-.legend-inline i {{display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px;}}
-div[data-testid="stMetric"] {{background: #fff; border-radius: 12px;}}
-div[data-testid="stMetricValue"] {{color: {NAVY}; font-weight: 700;}}
-div[data-testid="stMetricLabel"] p {{color: {MUTED}; font-size: 13px; text-transform: uppercase; letter-spacing: .05em;}}
+.legend-inline i {{display: inline-block; width: 12px; height: 12px; border-radius: 0; margin-right: 6px; vertical-align: -1px;}}
+div[data-testid="stMetric"] {{background: #fff; border-radius: 0 !important; border: 0 !important; border-top: 3px solid {NAVY} !important;
+  box-shadow: none; padding-top: 10px;}}
+div[data-testid="stMetricValue"] {{color: {NAVY}; font-weight: 600; font-family: {SERIF};}}
+div[data-testid="stMetricLabel"] p {{color: {MUTED}; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700;}}
 .stTabs [data-baseweb="tab-list"] {{gap: 4px; border-bottom: 1px solid {GRID};}}
-.stTabs [data-baseweb="tab"] {{font-size: 15px; font-weight: 600; padding: 10px 16px;}}
-.reco {{background: #fff; border: 1px solid {GRID}; border-top: 5px solid var(--c); border-radius: 14px; padding: 18px 20px 6px; min-height: 345px; margin-bottom: 8px;}}
+.stTabs [data-baseweb="tab"] {{font-size: 15px; font-weight: 700; padding: 10px 16px;}}
+div[data-testid="stPlotlyChart"] {{border-top: 1px solid {GRID}; padding-top: 4px;}}
+.reco {{background: #fff; border: 1px solid {GRID}; border-top: 4px solid var(--c); border-radius: 0; padding: 18px 20px 6px; min-height: 345px; margin-bottom: 8px;}}
 .reco .tag {{display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--c); background: var(--t); border-radius: 999px; padding: 3px 10px;}}
-.reco h4 {{font-size: 20px; color: {INK}; margin: 10px 0 2px; padding: 0; line-height: 1.2;}}
+  color: var(--c); background: transparent; border-radius: 0; padding: 0;}}
+.reco h4 {{font-family: {SERIF}; font-size: 21px; color: {INK}; margin: 8px 0 2px; padding: 0; line-height: 1.2; font-weight: 600;}}
 .reco .why {{font-size: 13.5px; color: {MUTED}; margin: 0 0 12px;}}
 .reco .kpis {{display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;}}
-.reco .k {{background: #F4F6FB; border-radius: 10px; padding: 9px 10px;}}
-.reco .k b {{display: block; font-size: 20px; color: {NAVY};}}
+.reco .k {{background: #F4F5F6; border-radius: 0; padding: 9px 10px;}}
+.reco .k b {{display: block; font-family: {SERIF}; font-size: 21px; font-weight: 600; color: {NAVY};}}
 .reco .k span {{font-size: 11.5px; color: {MUTED}; line-height: 1.25; display: block;}}
-.reco .move {{font-size: 13.5px; color: {INK2}; border-top: 1px dashed {GRID}; padding: 10px 0 8px; margin: 0;}}
+.reco .move {{font-size: 13.5px; color: {INK2}; border-top: 1px solid {GRID}; padding: 10px 0 8px; margin: 0;}}
 .reco .move b {{color: {INK};}}
 .foot {{color: {MUTED}; font-size: 12px; margin-top: 28px; border-top: 1px solid {GRID}; padding-top: 10px;}}
 </style>
@@ -218,7 +224,7 @@ def style(fig: go.Figure, h: int = 360, legend: bool = True, hover: str = "x uni
         showlegend=legend,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, xanchor="left", title=None,
                     font=dict(size=12.5), bgcolor="rgba(0,0,0,0)"),
-        barcornerradius=4, bargap=0.28, hovermode=hover,
+        barcornerradius=0, bargap=0.28, hovermode=hover,
     )
     fig.update_xaxes(showgrid=False, linecolor=AXIS, tickfont=dict(color=MUTED), ticks="", title=None)
     fig.update_yaxes(gridcolor=GRID, zeroline=False, tickfont=dict(color=MUTED), title=None, separatethousands=True)
@@ -340,9 +346,9 @@ st.html(f"""
 <div class="hero">
   <div class="hero-top">
     <div>
-      <div class="eyebrow">Strategy review · Mexico light vehicles · {FIRST}–{LAST}</div>
+      <div class="eyebrow">Strategy Consultant · Mexico {FIRST}-{LAST} Analysis</div>
       <h1>Ford Mexico: where to invest next</h1>
-      <p class="sub">Ford's position, the market's growth pockets, and how buyers are shifting.</p>
+      <p class="sub">Ford's position, the market's growth, and how buyers are shifting</p>
     </div>
     {f'<img class="hero-logo" src="{LOGO_SRC}" alt="Ford logo">' if LOGO_SRC else ""}
   </div>
@@ -447,7 +453,7 @@ with t1:
 
     # 1.3 Country of origin
     chart_title("Where Ford's Mexico sales are built", f"Units by country of manufacture · {PER}")
-    CO_SHOW = {"United States": "#1F4FB8", "Mexico": "#12A0B0", "China": "#D98E04", "Argentina": "#C2508F"}
+    CO_SHOW = {"United States": "#2251FF", "Mexico": "#12A0B0", "China": "#D98E04", "Argentina": "#C2508F"}
     co = pivot(ford_df, "country").reindex(columns=list(CO_SHOW), fill_value=0).loc[yrs]
     fig = go.Figure()
     for cname, col in CO_SHOW.items():
@@ -626,7 +632,7 @@ with t3:
         lim = np.nanmax(np.abs(np.clip(z, -40, 40)))
         fig = go.Figure(go.Heatmap(
             z=np.clip(z, -lim, lim), x=list(windows), y=rows, zmid=0, zmin=-lim, zmax=lim,
-            colorscale=[[0, NEG], [0.5, "#F2F3F6"], [1, POS]], showscale=False, xgap=3, ygap=3,
+            colorscale=[[0, NEG], [0.5, "#F4F5F6"], [1, POS]], showscale=False, xgap=3, ygap=3,
             text=[[("—" if np.isnan(v) else f"{v:+.1f}%") for v in r] for r in z], texttemplate="%{text}",
             textfont=dict(size=13, family=FONT), customdata=z,
             hovertemplate="%{y} · %{x}: %{customdata:.1f}%<extra></extra>",
@@ -812,7 +818,7 @@ with t4:
 
     r1, r2, r3 = st.columns(3, gap="medium")
     with r1:
-        reco_card(1, "Growth bet", "#B37400", "#FDF1DC", "New minivan, with a hybrid option",
+        reco_card(1, "Growth bet", NAVY, "#E8EAEC", "New minivan, with a hybrid option",
                   "Fastest-growing segment; Ford has no true minivan.",
                   [(fmt_pct(mv_c5, d=0), f"Minivan CAGR {P5}–{L}"), (fmt_k(mv_tot), f"Segment units {L}"),
                    (f"{ford_mv / mv_tot * 100:.1f}%", f"Ford share {L} (Expedition)")],
@@ -820,7 +826,7 @@ with t4:
         chart_title(f"Minivan leaders · {L}")
         leader_chart(seg_leaders("Minivans"), {"Ford": FORD, "Sienna": RIVAL})
     with r2:
-        reco_card(2, "Quick win", FORD, "#E4ECFB", "Extend Territory with hybrid trims",
+        reco_card(2, "Quick win", FORD, "#E6ECFF", "Extend Territory with hybrid trims",
                   "Territory is Ford's #1 nameplate; hybrids are the volume EV tech.",
                   [(fmt_k(terr[L]), f"Territory units {L} ({terr[L] / ford[L] * 100:.0f}% of Ford)"),
                    (fmt_pct(hev_c, d=0), f"Hybrid CAGR 2016–{L}"),
@@ -835,7 +841,7 @@ with t4:
         fig.update_layout(margin=dict(l=4, r=4, t=8, b=4)); fig.update_yaxes(showticklabels=False, range=[0, terr.max() * 1.25])
         show(fig)
     with r3:
-        reco_card(3, "Brand halo", NEG, "#FBE6E4", "Sport compact vs GTI & León",
+        reco_card(3, "Brand halo", "#0679A8", "#E0F2FA", "Sport compact vs GTI & León",
                   "Sports demand is recovering; VW group owns the affordable hot-hatch.",
                   [(fmt_pct(sp_c5, d=0), f"Sports CAGR {P5}–{L}"), (fmt_k(vw_seat), f"GTI + León units {L}"),
                    (fmt_k(mustang), f"Mustang units {L}")],
