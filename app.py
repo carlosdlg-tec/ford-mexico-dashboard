@@ -87,7 +87,7 @@ PRESETS = {
 CSS = f"""
 <style>
 .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 1320px;}}
-html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]) {{font-family: {FONT} !important;}}
+html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]):not([translate="no"]) {{font-family: {FONT} !important;}}
 /* Hero colours are taken from the Ford oval: deep navy #08142E -> #17326E -> #0D69A9, highlight #4CA9E3, chrome rim #D3D2D2 */
 .hero {{border-radius: 18px; padding: 30px 34px 26px; color: #fff; margin-bottom: 6px;
   border: 1px solid rgba(211,210,210,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
