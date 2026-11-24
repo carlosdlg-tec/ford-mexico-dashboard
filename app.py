@@ -477,27 +477,28 @@ with t2:
             chart_title("Total market units", f"COVID cut 2020 volume {abs(market[2020] / market[2019] - 1) * 100:.0f}% vs 2019"
                         + (f"; back above 2019 in {back}" if back else ""))
         with hr:
-            gran = st.segmented_control("Granularity", ["Annual", "Monthly"], default="Annual", key="mkt_gran",
+            view = st.segmented_control("View", ["Full market", "By segment"], default="Full market", key="mkt_view",
                                         label_visibility="collapsed")
-        if gran == "Monthly":
-            m = df[(df["year"] >= Y0) & (df["year"] <= Y1)].groupby("date")["units"].sum()
+        s = market.loc[yrs]
+        if view == "By segment":
             fig = go.Figure()
-            fig.add_scatter(x=m.index, y=m.values, mode="lines", line=dict(color=CONTEXT, width=1.5), name="Monthly",
-                            hovertemplate="%{x|%b %Y}: %{y:,.0f}<extra></extra>")
-            r = m.rolling(12, min_periods=12).mean()
-            fig.add_scatter(x=r.index, y=r.values, mode="lines", line=dict(color=FORD, width=2.5), name="12-month average",
-                            hovertemplate="12-mo avg: %{y:,.0f}<extra></extra>")
-            style(fig, 360); bands(fig, mode="monthly")
-            fig.update_xaxes(dtick="M12", tickformat="%Y")
+            for sname in seg_mkt.columns:
+                fig.add_bar(x=yrs, y=seg_mkt.loc[yrs, sname], name=sname,
+                            marker=dict(color=SEG_COL[sname], line=dict(color="white", width=1.5)),
+                            hovertemplate=f"{sname}: %{{y:,.0f}}<extra></extra>")
+            # market total above each stack, same as the full-market view
+            fig.add_scatter(x=yrs, y=s.values, mode="text", text=[fmt_k(v) for v in s.values], textposition="top center",
+                            textfont=dict(color=INK2, size=11.5), showlegend=False, hoverinfo="skip", cliponaxis=False)
+            style(fig, 400); fig.update_layout(barmode="stack", legend_traceorder="normal")
+            year_axis(fig, Y0, Y1); bands(fig, labels=False)
         else:
-            s = market.loc[yrs]
             fig = go.Figure(go.Bar(
                 x=yrs, y=s.values, marker_color=FORD, name="Market",
                 text=[fmt_k(v) for v in s.values], textposition="outside", cliponaxis=False,
                 textfont=dict(color=INK2, size=11.5), hovertemplate="%{x}: %{y:,.0f} units<extra></extra>",
             ))
-            style(fig, 360, legend=False, hover="closest"); year_axis(fig, Y0, Y1); bands(fig)
-            fig.update_yaxes(range=[0, s.max() * 1.15])
+            style(fig, 400, legend=False, hover="closest"); year_axis(fig, Y0, Y1); bands(fig)
+        fig.update_yaxes(range=[0, s.max() * 1.15])
         show(fig)
     # 2.3 One-vs-one comparison
     section("1v1", "Head-to-head comparison", "Pick any two companies")

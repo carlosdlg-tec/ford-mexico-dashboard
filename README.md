@@ -5,7 +5,7 @@ Streamlit dashboard for a strategy review of Ford in the Mexican light-vehicle m
 | Tab | What it shows |
 |---|---|
 | **01 · Ford today** | Units by year, market share, units by car segment (units / % mix), top 10 nameplates for a year you pick from a dropdown, and a line chart of units by country of manufacture (United States, Mexico, China, Argentina; a note lists the countries not shown) |
-| **02 · Industry** | Total market (annual / monthly), plus a **head-to-head comparison** of any two companies: side-by-side, equal-width charts of total units by year and units by year for one car segment picked from a dropdown |
+| **02 · Industry** | Total market units by year, with a one-click switch between the full market and a stacked split by car segment, plus a **head-to-head comparison** of any two companies: side-by-side, equal-width charts of total units by year and units by year for one car segment picked from a dropdown |
 | **03 · Customer preferences** | CAGR by segment for the selected period, segment CAGR heatmap across the cycle (Pre-COVID 2015–19, COVID + chips 2019–22, Recovery 2022–25, Decade 2015–25), growth index and CAGR for emerging segments (minivans, hybrids, PHEV, BEV), electrified sales and penetration |
 | **Recommendations** | Where-to-play matrix plus 3 moves: hybrid minivan, Territory hybrid, sport compact vs GTI and León |
 
