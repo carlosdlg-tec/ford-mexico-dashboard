@@ -411,8 +411,12 @@ with t1:
             fig.update_yaxes(ticksuffix="%", range=[0, 100])
         show(fig)
     with b:
-        chart_title(f"Top nameplates · {Y1}", "Units, colored by segment")
-        top = (ford_df[ford_df["year"] == Y1].groupby(["model", "segment"])["units"].sum()
+        head_l, head_r = st.columns([3, 2])
+        with head_r:
+            top_year = st.selectbox("Year", yrs[::-1], index=0, key="top_year", label_visibility="collapsed")
+        with head_l:
+            chart_title(f"Top nameplates · {top_year}", "Units, colored by segment")
+        top = (ford_df[ford_df["year"] == top_year].groupby(["model", "segment"])["units"].sum()
                .reset_index().sort_values("units", ascending=False).head(10).iloc[::-1])
         fig = go.Figure(go.Bar(
             x=top["units"], y=top["model"], orientation="h",
@@ -427,20 +431,24 @@ with t1:
         show(fig)
 
     # 1.3 Country of origin
-    chart_title("Where Ford's Mexico sales are built", f"Units by country of manufacture · {Y0} vs {Y1}")
-    co = pivot(ford_df, "country").loc[[Y0, Y1]].T
-    co = co[(co[Y0] > 0) | (co[Y1] > 0)].sort_values([Y1, Y0], ascending=True)
+    chart_title("Where Ford's Mexico sales are built", f"Units by country of manufacture · {PER}")
+    CO_SHOW = {"United States": "#1F4FB8", "Mexico": "#12A0B0", "China": "#D98E04", "Argentina": "#C2508F"}
+    co = pivot(ford_df, "country").reindex(columns=list(CO_SHOW), fill_value=0).loc[yrs]
     fig = go.Figure()
-    fig.add_bar(y=co.index, x=co[Y0], orientation="h", name=str(Y0), marker_color=FORD_LT,
-                hovertemplate=f"%{{y}} {Y0}: %{{x:,.0f}}<extra></extra>")
-    fig.add_bar(y=co.index, x=co[Y1], orientation="h", name=str(Y1), marker_color=FORD,
-                text=[fmt_k(v) if v > 0 else "" for v in co[Y1]], textposition="outside", cliponaxis=False,
-                textfont=dict(size=12, color=INK2), hovertemplate=f"%{{y}} {Y1}: %{{x:,.0f}}<extra></extra>")
-    style(fig, max(300, 34 * len(co) + 80), hover="closest")
-    fig.update_layout(barmode="group", bargap=0.3, bargroupgap=0.08, legend=dict(traceorder="normal"))
-    fig.update_xaxes(showgrid=True, gridcolor=GRID, tickformat=",")
-    fig.update_yaxes(showgrid=False, tickfont=dict(color=INK2, size=12.5))
+    for cname, col in CO_SHOW.items():
+        fig.add_scatter(x=yrs, y=co[cname].values, name=cname, mode="lines+markers", line=dict(color=col, width=2.5),
+                        marker=dict(size=7, color=col, line=dict(color="white", width=1.5)),
+                        hovertemplate=f"{cname}: %{{y:,.0f}}<extra></extra>")
+    end_labels(fig, [(Y1, co.loc[Y1, c], fmt_k(co.loc[Y1, c])) for c in CO_SHOW], 380, co.max().max(), xshift=26)
+    style(fig, 380); fig.update_layout(legend=dict(traceorder="normal"))
+    year_axis(fig, Y0, Y1); bands(fig)
+    fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(rangemode="tozero")
     show(fig)
+    co_all = pivot(ford_df, "country").loc[yrs]
+    hidden = [c for c in co_all.columns[co_all.sum() > 0] if c not in CO_SHOW]
+    if hidden:
+        st.caption(f"Not shown: {', '.join(sorted(hidden))} "
+                   f"({fmt_k(co_all[hidden].sum().sum())} units over {PER}).")
 
     data_table(pd.DataFrame({"Ford units": ford, "Market units": market, "Share %": (share * 100).round(2),
                              "Rank": ford_rank}).join(seg_ford.add_prefix("Ford · ")).loc[Y0:Y1].astype(float).round(2))
@@ -462,8 +470,7 @@ with t2:
     c[3].metric("Fastest-growing segment", fastest, f"{fmt_pct(seg_cagr[fastest])} CAGR", border=True)
 
     # 2.1 Total market
-    a, b = st.columns([3, 2], gap="large")
-    with a:
+    with st.container():
         hl, hr = st.columns([3, 2])
         with hl:
             back = next((y for y in YEARS if y > 2020 and market[y] >= market[2019]), None)
@@ -492,49 +499,6 @@ with t2:
             style(fig, 360, legend=False, hover="closest"); year_axis(fig, Y0, Y1); bands(fig)
             fig.update_yaxes(range=[0, s.max() * 1.15])
         show(fig)
-    with b:
-        chart_title(f"CAGR by segment · {PER}", "Dashed line = total market")
-        sc = seg_cagr.sort_values()
-        fig = go.Figure(go.Bar(
-            x=sc.values * 100, y=sc.index, orientation="h",
-            marker_color=[POS if v >= 0 else NEG for v in sc.values],
-            text=[fmt_pct(v) for v in sc.values], textposition="outside", cliponaxis=False,
-            textfont=dict(color=INK2, size=12), hovertemplate="%{y}: %{x:.1f}%<extra></extra>",
-        ))
-        fig.add_vline(x=mkt_cagr * 100, line=dict(color=INK2, width=1.5, dash="dash"),
-                      annotation_text=f"Market {fmt_pct(mkt_cagr)}", annotation_position="top",
-                      annotation_font=dict(size=11.5, color=INK2))
-        style(fig, 360, legend=False, hover="closest")
-        span = np.nanmax(np.abs(sc.values * 100)) if sc.notna().any() else 10
-        fig.update_xaxes(ticksuffix="%", showgrid=True, gridcolor=GRID, zeroline=True, zerolinecolor=AXIS,
-                         range=[min(-2, np.nanmin(sc.values * 100) * 1.35), span * 1.35])
-        fig.update_yaxes(showgrid=False, tickfont=dict(color=INK2, size=12.5))
-        show(fig)
-
-    # 2.2 CAGR heatmap across shock windows
-    chart_title("Segment CAGR across the cycle", "How each segment behaved before, during and after the shocks")
-    windows = {"Pre-COVID<br>2015–19": (2015, 2019), "COVID + chips<br>2019–22": (2019, 2022),
-               "Recovery<br>2022–25": (2022, 2025), "Decade<br>2015–25": (2015, 2025),
-               f"Selected<br>{PER}": (Y0, Y1)}
-    rows = list(seg_mkt.columns) + ["Total market"]
-    z = []
-    for sname in rows:
-        ser = market if sname == "Total market" else seg_mkt[sname]
-        z.append([cagr(ser[w0], ser[w1], w1 - w0) * 100 for w0, w1 in windows.values()])
-    z = np.array(z, dtype=float)
-    lim = np.nanmax(np.abs(np.clip(z, -40, 40)))
-    fig = go.Figure(go.Heatmap(
-        z=np.clip(z, -lim, lim), x=list(windows), y=rows, zmid=0, zmin=-lim, zmax=lim,
-        colorscale=[[0, NEG], [0.5, "#F2F3F6"], [1, POS]], showscale=False, xgap=3, ygap=3,
-        text=[[("—" if np.isnan(v) else f"{v:+.1f}%") for v in r] for r in z], texttemplate="%{text}",
-        textfont=dict(size=13, family=FONT), customdata=z,
-        hovertemplate="%{y} · %{x}: %{customdata:.1f}%<extra></extra>",
-    ))
-    style(fig, 330, legend=False, hover="closest")
-    fig.update_yaxes(autorange="reversed", showgrid=False, tickfont=dict(color=INK2, size=12.5))
-    fig.update_xaxes(side="top", tickfont=dict(color=INK2, size=12))
-    show(fig)
-
     # 2.3 One-vs-one comparison
     section("1v1", "Head-to-head comparison", "Pick any two companies")
     brand_rank = df[(df["year"] >= Y0) & (df["year"] <= Y1)].groupby("brand")["units"].sum().sort_values(ascending=False)
@@ -602,7 +566,6 @@ with t3:
 
     mix = seg_mkt.div(market, axis=0) * 100
     car_share = (mix["Subcompact"] + mix["Compact"])
-    cross = next((y for y in YEARS if mix.loc[y, "SUVs"] > mix.loc[y, "Subcompact"]), None)
     hev_y0 = max(Y0, 2016)
     hev_cagr = cagr(tech.loc[hev_y0, "Hybrid (HEV)"], tech.loc[Y1, "Hybrid (HEV)"], Y1 - hev_y0)
     mv_cagr = cagr(seg_mkt.loc[Y0, "Minivans"], seg_mkt.loc[Y1, "Minivans"], N)
@@ -613,41 +576,48 @@ with t3:
     c[2].metric(f"Minivan CAGR {PER}", fmt_pct(mv_cagr), f"{fmt_k(seg_mkt.loc[Y1,'Minivans'])} units in {Y1}", delta_color="off", delta_arrow="off", border=True)
     c[3].metric(f"Hybrid CAGR {hev_y0}–{Y1}", fmt_pct(hev_cagr), f"{fmt_k(tech.loc[Y1,'Hybrid (HEV)'])} units in {Y1}", delta_color="off", delta_arrow="off", border=True)
 
-    # 3.1 Shift from cars to SUVs
-    a, b = st.columns([3, 2], gap="large")
+    # 3.1 Segment growth
+    a, b = st.columns([2, 3], gap="large")
     with a:
-        chart_title("From compact cars to SUVs",
-                    f"Share of total market · SUVs overtook subcompacts in {cross}" if cross else "Share of total market")
-        pick = st.pills("Segments", SEG_ORDER, default=["SUVs", "Subcompact", "Compact", "Pickups"],
-                        selection_mode="multi", key="mix_pick", label_visibility="collapsed")
-        fig = go.Figure()
-        for sname in [s for s in SEG_ORDER if s in (pick or [])]:
-            s = mix[sname].loc[yrs]
-            fig.add_scatter(x=yrs, y=s.values, name=sname, mode="lines+markers", line=dict(color=SEG_COL[sname], width=2.5),
-                            marker=dict(size=7, color=SEG_COL[sname], line=dict(color="white", width=1.5)),
-                            hovertemplate=f"{sname}: %{{y:.1f}}%<extra></extra>")
-        sel = [s for s in SEG_ORDER if s in (pick or [])]
-        if sel:
-            end_labels(fig, [(Y1, mix.loc[Y1, s], f"{mix.loc[Y1, s]:.0f}%") for s in sel], 400,
-                       mix.loc[yrs, sel].max().max(), xshift=22)
-        if cross and Y0 <= cross <= Y1 and "SUVs" in (pick or []) and "Subcompact" in (pick or []):
-            fig.add_annotation(x=cross, y=mix.loc[cross, "SUVs"], text="SUVs pass<br>subcompacts", showarrow=True,
-                               arrowhead=0, arrowcolor=MUTED, ax=-50, ay=-42, font=dict(size=11.5, color=INK2))
-        style(fig, 400); year_axis(fig, Y0, Y1); bands(fig)
-        fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.8]); fig.update_yaxes(ticksuffix="%", rangemode="tozero")
-        show(fig)
-    with b:
-        chart_title(f"Who gained share · {Y0} → {Y1}", "Percentage-point change in segment share")
-        dpp = (mix.loc[Y1] - mix.loc[Y0]).sort_values()
+        chart_title(f"CAGR by segment · {PER}", "Dashed line = total market")
+        sc = seg_cagr.sort_values()
         fig = go.Figure(go.Bar(
-            x=dpp.values, y=dpp.index, orientation="h", marker_color=[POS if v >= 0 else NEG for v in dpp.values],
-            text=[f"{v:+.1f} pp" for v in dpp.values], textposition="outside", cliponaxis=False,
-            textfont=dict(color=INK2, size=12), hovertemplate="%{y}: %{x:+.1f} pp<extra></extra>",
+            x=sc.values * 100, y=sc.index, orientation="h",
+            marker_color=[POS if v >= 0 else NEG for v in sc.values],
+            text=[fmt_pct(v) for v in sc.values], textposition="outside", cliponaxis=False,
+            textfont=dict(color=INK2, size=12), hovertemplate="%{y}: %{x:.1f}%<extra></extra>",
         ))
-        style(fig, 400 + 38, legend=False, hover="closest")
-        lim = np.abs(dpp.values).max() * 1.45 if len(dpp) else 1
-        fig.update_xaxes(range=[-lim, lim], ticksuffix=" pp", showgrid=True, gridcolor=GRID, zeroline=True, zerolinecolor=AXIS)
+        fig.add_vline(x=mkt_cagr * 100, line=dict(color=INK2, width=1.5, dash="dash"),
+                      annotation_text=f"Market {fmt_pct(mkt_cagr)}", annotation_position="top",
+                      annotation_font=dict(size=11.5, color=INK2))
+        style(fig, 360, legend=False, hover="closest")
+        span = np.nanmax(np.abs(sc.values * 100)) if sc.notna().any() else 10
+        fig.update_xaxes(ticksuffix="%", showgrid=True, gridcolor=GRID, zeroline=True, zerolinecolor=AXIS,
+                         range=[min(-2, np.nanmin(sc.values * 100) * 1.35), span * 1.35])
         fig.update_yaxes(showgrid=False, tickfont=dict(color=INK2, size=12.5))
+        show(fig)
+
+    with b:
+        chart_title("Segment CAGR across the cycle", "How each segment behaved before, during and after the shocks")
+        windows = {"Pre-COVID<br>2015–19": (2015, 2019), "COVID + chips<br>2019–22": (2019, 2022),
+                   "Recovery<br>2022–25": (2022, 2025), "Decade<br>2015–25": (2015, 2025)}
+        rows = list(seg_mkt.columns) + ["Total market"]
+        z = []
+        for sname in rows:
+            ser = market if sname == "Total market" else seg_mkt[sname]
+            z.append([cagr(ser[w0], ser[w1], w1 - w0) * 100 for w0, w1 in windows.values()])
+        z = np.array(z, dtype=float)
+        lim = np.nanmax(np.abs(np.clip(z, -40, 40)))
+        fig = go.Figure(go.Heatmap(
+            z=np.clip(z, -lim, lim), x=list(windows), y=rows, zmid=0, zmin=-lim, zmax=lim,
+            colorscale=[[0, NEG], [0.5, "#F2F3F6"], [1, POS]], showscale=False, xgap=3, ygap=3,
+            text=[[("—" if np.isnan(v) else f"{v:+.1f}%") for v in r] for r in z], texttemplate="%{text}",
+            textfont=dict(size=13, family=FONT), customdata=z,
+            hovertemplate="%{y} · %{x}: %{customdata:.1f}%<extra></extra>",
+        ))
+        style(fig, 360, legend=False, hover="closest")
+        fig.update_yaxes(autorange="reversed", showgrid=False, tickfont=dict(color=INK2, size=12.5))
+        fig.update_xaxes(side="top", tickfont=dict(color=INK2, size=12))
         show(fig)
 
     # 3.2 Emerging segments
