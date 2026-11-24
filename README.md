@@ -36,4 +36,5 @@ The app reads `INEGI_Auto_Ventas_Maestro_2015_2025.xlsx` (sheets `Datos` and `Da
 - Hybrid and EV figures come from INEGI's state-level series, which starts in 2016 and has no brand detail. Ford's hybrid share is computed from model names (Escape HEV, Fusion Híbrido).
 - BYD, Tesla and some other brands don't report to INEGI, so EV volumes are understated.
 - Segments are kept as INEGI reports them. For example, Ford Expedition is classified as a minivan and Transit as an SUV.
+- The Ford logo (`ford_logo.svg`, from Wikimedia Commons) is a trademark of Ford Motor Company and is used here only to identify the subject of the analysis. This is an independent academic project, not affiliated with or endorsed by Ford. The header colours are taken from the logo's blues.
 - The segment colours were checked for colour-blind separation. Every chart also has a legend or direct labels, and the first three tabs each have a data table.

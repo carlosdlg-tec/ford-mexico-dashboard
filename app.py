@@ -7,6 +7,7 @@ Buckets:  01 Ford today  |  02 Industry  |  03 Customer preferences  |  Recommen
 Run locally (from this folder, so the Ford theme in .streamlit/config.toml is used):
     streamlit run app.py
 """
+import base64
 from pathlib import Path
 
 import numpy as np
@@ -28,6 +29,8 @@ st.set_page_config(
 HERE = Path(__file__).resolve().parent
 FILE = "INEGI_Auto_Ventas_Maestro_2015_2025.xlsx"
 DATA = next((p / FILE for p in (HERE, HERE.parent, HERE / "data") if (p / FILE).exists()), HERE.parent / FILE)
+LOGO = HERE / "ford_logo.svg"  # Ford oval, Wikimedia Commons; trademark of Ford Motor Company
+LOGO_SRC = f"data:image/svg+xml;base64,{base64.b64encode(LOGO.read_bytes()).decode()}" if LOGO.exists() else ""
 
 # Ford palette
 NAVY = "#00095B"        # Ford Blue: headings, hero
@@ -84,17 +87,24 @@ CSS = f"""
 <style>
 .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 1320px;}}
 html, body, [class*="css"], p, li, div, h1, h2, h3, h4 {{font-family: {FONT};}}
+/* Hero colours are taken from the Ford oval: deep navy #08142E -> #17326E -> #0D69A9, highlight #4CA9E3, chrome rim #D3D2D2 */
 .hero {{border-radius: 18px; padding: 30px 34px 26px; color: #fff; margin-bottom: 6px;
-  background: radial-gradient(900px 320px at 90% -10%, rgba(31,79,184,.75), transparent 60%),
-              linear-gradient(135deg, #00063D 0%, {NAVY} 55%, #0A2A7A 100%);}}
-.hero .eyebrow {{letter-spacing: .2em; text-transform: uppercase; font-size: 12px; color: #9DBBF2; font-weight: 600;}}
+  border: 1px solid rgba(211,210,210,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+  background: radial-gradient(520px 260px at 88% 18%, rgba(76,169,227,.38), transparent 70%),
+              linear-gradient(120deg, #08142E 0%, #17326E 52%, #0D69A9 100%);}}
+.hero-top {{display: flex; justify-content: space-between; align-items: center; gap: 24px;}}
+.hero-logo {{width: clamp(110px, 15vw, 190px); height: auto; flex-shrink: 0;
+  filter: drop-shadow(0 6px 14px rgba(5,17,37,.55));}}
+.hero .eyebrow {{letter-spacing: .2em; text-transform: uppercase; font-size: 12px; color: #7CC3EE; font-weight: 600;}}
 .hero h1 {{font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; margin: 8px 0 6px; color: #fff; font-weight: 750; padding: 0;}}
-.hero .sub {{font-size: 15.5px; color: #C9D6F5; margin: 0;}}
+.hero .sub {{font-size: 15.5px; color: #D3E3F3; margin: 0;}}
 .hero-stats {{display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 22px;}}
-.hero-stat {{background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.13); border-radius: 12px; padding: 12px 16px;}}
-.hero-stat .lbl {{font-size: 11.5px; color: #AFC2EC; text-transform: uppercase; letter-spacing: .08em;}}
+.hero-stat {{background: rgba(8,20,46,.32); border: 1px solid rgba(211,210,210,.22); border-top: 2px solid #4CA9E3;
+  border-radius: 12px; padding: 12px 16px;}}
+.hero-stat .lbl {{font-size: 11.5px; color: #B9D8F0; text-transform: uppercase; letter-spacing: .08em;}}
 .hero-stat .val {{font-size: 26px; font-weight: 700; margin-top: 2px; color: #fff;}}
-.hero-stat .val small {{font-size: 14px; color: #AFC2EC; font-weight: 500;}}
+.hero-stat .val small {{font-size: 14px; color: #B9D8F0; font-weight: 500;}}
+@media (max-width: 640px) {{.hero-top {{flex-direction: column-reverse; align-items: flex-start;}} .hero-logo {{width: 110px;}}}}
 .sec {{display: flex; align-items: center; gap: 12px; margin: 26px 0 4px;}}
 .sec .num {{background: {NAVY}; color: #fff; font-weight: 700; font-size: 13px; border-radius: 8px; padding: 4px 9px;}}
 .sec h3 {{margin: 0; padding: 0; font-size: 22px; color: {INK}; font-weight: 700;}}
@@ -328,9 +338,14 @@ tech["Electrified"] = tech[list(TECH_COL)].sum(axis=1, min_count=1)
 # ─────────────────────────────────────────────────────────────────────────────
 st.html(f"""
 <div class="hero">
-  <div class="eyebrow">Strategy review · Mexico light vehicles · {FIRST}–{LAST}</div>
-  <h1>Ford Mexico: where to invest next</h1>
-  <p class="sub">Ford's position, the market's growth pockets, and how buyers are shifting.</p>
+  <div class="hero-top">
+    <div>
+      <div class="eyebrow">Strategy review · Mexico light vehicles · {FIRST}–{LAST}</div>
+      <h1>Ford Mexico: where to invest next</h1>
+      <p class="sub">Ford's position, the market's growth pockets, and how buyers are shifting.</p>
+    </div>
+    {f'<img class="hero-logo" src="{LOGO_SRC}" alt="Ford logo">' if LOGO_SRC else ""}
+  </div>
   <div class="hero-stats">
     <div class="hero-stat"><div class="lbl">Ford units {LAST}</div><div class="val">{fmt_k(ford[LAST])} <small>vs {fmt_k(ford[FIRST])} in {FIRST}</small></div></div>
     <div class="hero-stat"><div class="lbl">Market share</div><div class="val">{share[LAST]*100:.1f}% <small>from {share[FIRST]*100:.1f}%</small></div></div>
