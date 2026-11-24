@@ -63,6 +63,13 @@ BRAND_NAME = {
     "Chrysler": "Stellantis (Jeep, RAM, Dodge, Chrysler)", "Mercedes Benz": "Mercedes-Benz",
     "KIA": "Kia", "JETOUR": "Jetour", "MOTORNATION": "Motornation",
 }
+# Chinese-owned brands, as named after BRAND_NAME mapping. Motornation sells Changan/BAIC/JMC; Auteco sells
+# Chinese EV vans. Volvo and Smart (Chinese owners, European brands and sales here) are left out.
+CHINESE_BRANDS = {
+    "MG Motor", "JAC", "Chirey", "Omoda", "Jetour", "Jetour Soueast", "Changan", "Geely",
+    "Great Wall Motor", "GAC", "Foton", "Motornation", "Auteco",
+}
+CN_GROUP = "Chinese brands (all)"
 COUNTRY_EN = {
     "Estados Unidos": "United States", "Canadá": "Canada", "Japón": "Japan", "Italia": "Italy",
     "Bélgica": "Belgium", "Alemania": "Germany", "España": "Spain", "Eslovaquia": "Slovakia",
@@ -519,12 +526,17 @@ with t2:
     # 2.3 One-vs-one comparison
     section("1v1", "Head-to-head comparison", "Pick any two companies")
     brand_rank = df[(df["year"] >= Y0) & (df["year"] <= Y1)].groupby("brand")["units"].sum().sort_values(ascending=False)
-    brands = brand_rank.index.tolist()
+    brands = [CN_GROUP] + brand_rank.index.tolist()  # the Chinese-brand group is listed first
     cc = st.columns([1, 1, 2])
     A = cc[0].selectbox("Company A", brands, index=brands.index(FORD_KEY) if FORD_KEY in brands else 0)
     others = [x for x in brands if x != A]
-    B = cc[1].selectbox("Company B", others, index=others.index("Toyota") if "Toyota" in others else 0)
-    dA, dB = df[df["brand"] == A], df[df["brand"] == B]
+    B = cc[1].selectbox("Company B", others, index=others.index("Toyota") if "Toyota" in others else 0,
+                        help=f"{CN_GROUP} = {', '.join(sorted(CHINESE_BRANDS))}")
+
+    def company(name: str) -> pd.DataFrame:
+        return df[df["brand"].isin(CHINESE_BRANDS)] if name == CN_GROUP else df[df["brand"] == name]
+
+    dA, dB = company(A), company(B)
     segA, segB = pivot(dA, "segment"), pivot(dB, "segment")
     used = [s for s in SEG_ORDER if (s in segA and segA.loc[Y0:Y1, s].sum() > 0) or (s in segB and segB.loc[Y0:Y1, s].sum() > 0)]
     seg = cc[2].selectbox("Car segment", used, index=used.index("SUVs") if "SUVs" in used else 0,
