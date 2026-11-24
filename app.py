@@ -522,7 +522,7 @@ with t2:
     k[2].metric(f"Share {Y1}: {A}", f"{uA[Y1] / market[Y1] * 100:.1f}%", f"{(uA[Y1]/market[Y1]-uA[Y0]/market[Y0])*100:+.1f} pp vs {Y0}", border=True)
     k[3].metric(f"Share {Y1}: {B}", f"{uB[Y1] / market[Y1] * 100:.1f}%", f"{(uB[Y1]/market[Y1]-uB[Y0]/market[Y0])*100:+.1f} pp vs {Y0}", border=True)
 
-    a, b = st.columns([2, 3], gap="large")
+    a, b = st.columns(2, gap="large")
     with a:
         chart_title("Total units sold by year", f"{A} vs {B}")
         fig = go.Figure()

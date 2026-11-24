@@ -4,12 +4,12 @@ Streamlit dashboard for a strategy review of Ford in the Mexican light-vehicle m
 
 | Tab | What it shows |
 |---|---|
-| **01 · Ford today** | Units by year, market share, units by car segment (units / % mix), top nameplates, country of manufacture |
-| **02 · Industry** | Total market (annual / monthly), CAGR by segment, CAGR heatmap across the COVID / chip-shortage cycle, **1v1 company comparison** (total units + segment units by year) |
-| **03 · Customer preferences** | Shift from compact/subcompact to SUVs, share gains, growth index and CAGR for emerging segments (minivans, hybrids, PHEV, BEV), electrified sales and penetration |
+| **01 · Ford today** | Units by year, market share, units by car segment (units / % mix), top 10 nameplates for a year you pick from a dropdown, and a line chart of units by country of manufacture (United States, Mexico, China, Argentina; a note lists the countries not shown) |
+| **02 · Industry** | Total market (annual / monthly), plus a **head-to-head comparison** of any two companies: side-by-side, equal-width charts of total units by year and units by year for one car segment picked from a dropdown |
+| **03 · Customer preferences** | CAGR by segment for the selected period, segment CAGR heatmap across the cycle (Pre-COVID 2015–19, COVID + chips 2019–22, Recovery 2022–25, Decade 2015–25), growth index and CAGR for emerging segments (minivans, hybrids, PHEV, BEV), electrified sales and penetration |
 | **Recommendations** | Where-to-play matrix plus 3 moves: hybrid minivan, Territory hybrid, sport compact vs GTI and León |
 
-**Global controls (sidebar):** quick-range presets (Pre-COVID, COVID + chips, Recovery…), an analysis-period slider that drives every chart and CAGR, and a toggle that shades COVID-19 (Mar–Dec 2020) and the chip shortage (2021 to mid-2023).
+**Global controls (sidebar):** quick-range presets (Pre-COVID, COVID + chips, Recovery…), an analysis-period slider that drives every chart and CAGR, and a toggle that shades COVID-19 (Mar–Dec 2020) and the chip shortage (2021 to mid-2023). The segment CAGR heatmap uses fixed windows, so it doesn't follow the slider.
 
 ## Run locally
 
@@ -36,4 +36,4 @@ The app reads `INEGI_Auto_Ventas_Maestro_2015_2025.xlsx` (sheets `Datos` and `Da
 - Hybrid and EV figures come from INEGI's state-level series, which starts in 2016 and has no brand detail. Ford's hybrid share is computed from model names (Escape HEV, Fusion Híbrido).
 - BYD, Tesla and some other brands don't report to INEGI, so EV volumes are understated.
 - Segments are kept as INEGI reports them. For example, Ford Expedition is classified as a minivan and Transit as an SUV.
-- The segment colours were checked for colour-blind separation. Every chart also has a legend or direct labels, and each tab has a data table.
+- The segment colours were checked for colour-blind separation. Every chart also has a legend or direct labels, and the first three tabs each have a data table.
