@@ -126,17 +126,22 @@ div[data-testid="stMetricValue"] {{color: {NAVY}; font-weight: 700;}}
 div[data-testid="stMetricLabel"] p {{color: {MUTED}; font-size: 13px; text-transform: uppercase; letter-spacing: .05em;}}
 .stTabs [data-baseweb="tab-list"] {{gap: 4px; border-bottom: 1px solid {GRID};}}
 .stTabs [data-baseweb="tab"] {{font-size: 15px; font-weight: 600; padding: 10px 16px;}}
-.reco {{background: #fff; border: 1px solid {GRID}; border-top: 5px solid var(--c); border-radius: 14px; padding: 18px 20px 6px; min-height: 430px; margin-bottom: 8px;}}
-.reco .tag {{display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--c); background: var(--t); border-radius: 999px; padding: 3px 10px;}}
-.reco h4 {{font-size: 20px; color: {INK}; margin: 10px 0 2px; padding: 0; line-height: 1.2;}}
-.reco .why {{font-size: 13.5px; color: {MUTED}; margin: 0 0 12px;}}
-.reco .kpis {{display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px;}}
-.reco .k {{background: #F4F6FB; border-radius: 10px; padding: 9px 10px;}}
-.reco .k b {{display: block; font-size: 20px; color: {NAVY};}}
-.reco .k span {{font-size: 11.5px; color: {MUTED}; line-height: 1.25; display: block;}}
-.reco .move {{font-size: 13.5px; color: {INK2}; border-top: 1px dashed {GRID}; padding: 10px 0 8px; margin: 0;}}
+.reco-grid {{display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 6px 0 4px;}}
+@media (max-width: 900px) {{.reco-grid {{grid-template-columns: 1fr;}}}}
+.reco {{background: #fff; border: 1px solid {GRID}; border-top: 5px solid var(--c); border-radius: 14px; padding: 12px 16px 2px;
+  display: flex; flex-direction: column;}}
+.reco .tag {{display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--c); background: var(--t); border-radius: 999px; padding: 2px 9px;}}
+.reco h4 {{font-size: 18px; color: {INK}; margin: 7px 0 2px; padding: 0; line-height: 1.2;}}
+.reco .why {{font-size: 13px; color: {MUTED}; margin: 0 0 8px; line-height: 1.35;}}
+.reco .kpis {{display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;}}
+.reco .k {{background: #F4F6FB; border-radius: 9px; padding: 6px 8px;}}
+.reco .k b {{display: block; font-size: 17px; color: {NAVY};}}
+.reco .k span {{font-size: 11px; color: {MUTED}; line-height: 1.2; display: block;}}
+.reco .move {{font-size: 13px; color: {INK2}; border-top: 1px dashed {GRID}; padding: 7px 0 8px; margin: auto 0 0; line-height: 1.35;}}
 .reco .move b {{color: {INK};}}
+.st-key-reco_seg button {{min-height: 26px; padding: 1px 7px; font-size: 12.5px;}}
+.st-key-reco_seg [data-testid="stButtonGroup"] > div {{justify-content: flex-end; flex-wrap: nowrap;}}
 .foot {{color: {MUTED}; font-size: 12px; margin-top: 28px; border-top: 1px solid {GRID}; padding-top: 10px;}}
 </style>
 """
@@ -768,29 +773,34 @@ with t3:
 # RECOMMENDATIONS
 # ═════════════════════════════════════════════════════════════════════════════
 with t4:
-    section("→", "Where Ford should invest", f"Segment attractiveness vs Ford's position · growth {PER}, share {Y1}")
+    section("→", "Where Ford should invest", f"Segment attractiveness vs Ford's position · growth {PER}, Ford units {Y1}")
 
     # Where-to-play matrix
     seg_tbl = pd.DataFrame({
         "cagr": seg_cagr * 100,
-        "ford_share": (seg_ford.loc[Y1] / seg_mkt.loc[Y1].replace(0, np.nan)) * 100,
+        "ford_units": seg_ford.loc[Y1],
+        "ford_share": (seg_ford.loc[Y1] / seg_mkt.loc[Y1].replace(0, np.nan)).fillna(0) * 100,
         "units": seg_mkt.loc[Y1],
     }).dropna(subset=["cagr"])
-    x_ref, y_ref = mkt_cagr * 100, share[Y1] * 100
+    x_ref, y_ref = mkt_cagr * 100, seg_tbl["ford_units"].mean()  # Ford's average units per segment
     fig = go.Figure()
-    for sname, r in seg_tbl.iterrows():
+    # big bubbles first so small ones stay visible; nudge labels where segments cluster near zero Ford units
+    LBL_POS = {"Subcompact": "top left", "Sports": "middle right"}
+    for sname, r in seg_tbl.sort_values("units", ascending=False).iterrows():
         fig.add_scatter(
-            x=[r["cagr"]], y=[r["ford_share"]], mode="markers+text", name=sname, text=[f"<b>{sname}</b>"],
-            textposition="top center", textfont=dict(size=12.5, color=INK),
+            x=[r["cagr"]], y=[r["ford_units"]], mode="markers+text", name=sname, text=[f"<b>{sname}</b>"],
+            textposition=LBL_POS.get(sname, "top center"), textfont=dict(size=12.5, color=INK),
             marker=dict(size=max(14, np.sqrt(r["units"]) / 8.5), color=SEG_COL.get(sname, CONTEXT), opacity=0.85,
                         line=dict(color="white", width=2)),
-            customdata=[[r["units"]]],
-            hovertemplate=f"<b>{sname}</b><br>CAGR %{{x:.1f}}%<br>Ford share %{{y:.1f}}%<br>Segment {Y1}: %{{customdata[0]:,.0f}} units<extra></extra>",
+            customdata=[[r["units"], r["ford_share"]]],
+            hovertemplate=(f"<b>{sname}</b><br>CAGR %{{x:.1f}}%<br>Ford units {Y1}: %{{y:,.0f}} "
+                           f"(%{{customdata[1]:.1f}}% of segment)<br>Segment {Y1}: %{{customdata[0]:,.0f}} units<extra></extra>"),
         )
     fig.add_vline(x=x_ref, line=dict(color=AXIS, width=1.5, dash="dash"))
     fig.add_hline(y=y_ref, line=dict(color=AXIS, width=1.5, dash="dash"))
     xr = [min(seg_tbl["cagr"].min(), x_ref) - 4, max(seg_tbl["cagr"].max(), x_ref) + 5]
-    yr = [-1.5, max(seg_tbl["ford_share"].max(), y_ref) * 1.35 + 1]
+    y_top = max(seg_tbl["ford_units"].max(), y_ref) * 1.3
+    yr = [-y_top * 0.08, y_top]
     for txt, xx, yy, xa, ya in (("GROW & DEFEND", xr[1], yr[1], "right", "top"), ("INVEST TO ENTER", xr[1], yr[0], "right", "bottom"),
                                 ("HARVEST", xr[0], yr[1], "left", "top"), ("DEPRIORITIZE", xr[0], yr[0], "left", "bottom")):
         fig.add_annotation(x=xx, y=yy, text=txt, showarrow=False, xanchor=xa, yanchor=ya,
@@ -798,13 +808,13 @@ with t4:
     style(fig, 430, legend=False, hover="closest")
     fig.update_xaxes(title=dict(text=f"Segment CAGR {PER} →", font=dict(size=12.5, color=MUTED)), ticksuffix="%",
                      showgrid=True, gridcolor=GRID, range=xr, zeroline=False)
-    fig.update_yaxes(title=dict(text=f"Ford share of segment {Y1} →", font=dict(size=12.5, color=MUTED)), ticksuffix="%", range=yr)
+    fig.update_yaxes(title=dict(text=f"Ford units sold {Y1} →", font=dict(size=12.5, color=MUTED)), range=yr)
     fig.add_annotation(x=x_ref, y=yr[1], text=f"Market {fmt_pct(mkt_cagr)}", showarrow=False, yanchor="top", xshift=46,
                        font=dict(size=11, color=MUTED))
-    fig.add_annotation(x=xr[0], y=y_ref, text=f"Ford avg {y_ref:.1f}%", showarrow=False, xanchor="left", yshift=10,
+    fig.add_annotation(x=xr[0], y=y_ref, text=f"Ford avg per segment {fmt_k(y_ref)}", showarrow=False, xanchor="left", yshift=10,
                        font=dict(size=11, color=MUTED))
     show(fig)
-    st.caption("Bubble size = segment units. Hybrids are a powertrain, not a segment, so they sit inside these bubbles.")
+    st.caption("Bubble size = Total units sold in Mexico by segment. Hybrids & EVs are within these car segments.")
 
     # Evidence (latest year, fixed windows so the recommendations stay stable)
     L, P3 = LAST, LAST - 3
@@ -822,11 +832,11 @@ with t4:
     mv_c3 = cagr(seg_mkt.loc[P3, "Minivans"], mv_tot, 3)
     sp_c3 = cagr(seg_mkt.loc[P3, "Sports"], sp_tot, 3)
 
-    def reco_card(n: int, tag: str, color: str, tint: str, title: str, why: str, kpis: list[tuple[str, str]], move: str) -> None:
+    def reco_card(n: int, tag: str, color: str, tint: str, title: str, why: str, kpis: list[tuple[str, str]], move: str) -> str:
         k = "".join(f'<div class="k"><b>{v}</b><span>{lbl}</span></div>' for v, lbl in kpis)
-        st.html(f"""<div class="reco" style="--c:{color};--t:{tint}">
-          <span class="tag">{n:02d} · {tag}</span><h4>{title}</h4><p class="why">{why}</p>
-          <div class="kpis">{k}</div><p class="move"><b>The move:</b> {move}</p></div>""")
+        return (f'<div class="reco" style="--c:{color};--t:{tint}">'
+                f'<span class="tag">{n:02d} · {tag}</span><h4>{title}</h4><p class="why">{why}</p>'
+                f'<div class="kpis">{k}</div><p class="move"><b>Final recommendations:</b> {move}</p></div>')
 
     def leader_chart(frame: pd.DataFrame, highlight: dict[str, str], h: int = 250) -> None:
         frame = frame.iloc[::-1]
@@ -852,55 +862,60 @@ with t4:
             top = pd.concat([top.head(n - 1), ford_rows.head(1)])
         return top
 
-    r1, r2, r3 = st.columns(3, gap="medium")
-    with r1:
+    # Cards in one grid row (equal heights), evidence charts in a row below; sized to fit one screen
+    CH = 180  # evidence chart height
+    st.html('<div class="reco-grid">' + "".join([
         reco_card(1, "Cost position", "#0E7C88", "#DDF3F5", "Build more, and more models, in Mexico",
                   f"Mexico-built sales fell from {fmt_k(ford_mx[FIRST])} to {fmt_k(ford_mx[L])}; "
                   "imports cost more as Chinese brands win on price.",
-                  [(fmt_k(ford_mx[L]), f"Mexico-built Ford units {L} ({fmt_k(ford_mx[FIRST])} in {FIRST})"),
-                   (f"{ford_mx[L] / ford[L] * 100:.0f}%", f"Of Ford built in Mexico ({ford_mx[FIRST] / ford[FIRST] * 100:.0f}% in {FIRST})"),
+                  [(fmt_k(ford_mx[L]), f"Built in Mexico {L} ({fmt_k(ford_mx[FIRST])} in {FIRST})"),
+                   (f"{ford_mx[L] / ford[L] * 100:.0f}%", f"Of Ford sales ({ford_mx[FIRST] / ford[FIRST] * 100:.0f}% in {FIRST})"),
                    (f"{cn_share[L] * 100:.0f}%", f"Chinese brands' share {L}")],
-                  "Raise local output and widen the Mexico-built line-up beyond Bronco Sport and Maverick "
-                  "to price against Chinese brands.")
-        chart_title("Mexico-built Ford units by year")
-        fig = go.Figure(go.Bar(x=YEARS, y=ford_mx.values, marker_color="#12A0B0",
-                               text=[fmt_k(v) if y in (FIRST, L) else "" for y, v in ford_mx.items()],
-                               textposition="outside", cliponaxis=False, textfont=dict(size=11.5, color=INK2),
-                               hovertemplate="%{x}: %{y:,.0f}<extra></extra>"))
-        style(fig, 250, legend=False, hover="closest"); year_axis(fig, FIRST, L, step=2)
-        fig.update_layout(margin=dict(l=4, r=4, t=8, b=4)); fig.update_yaxes(showticklabels=False, range=[0, ford_mx.max() * 1.25])
-        show(fig)
-    with r2:
+                  "Raise local output and add Mexico-built models beyond Bronco Sport and Maverick to match Chinese prices."),
         reco_card(2, "Quick win", FORD, "#E4ECFB", "Extend Territory with more EV & hybrid options",
                   "Territory is Ford's #1 nameplate; electrified demand keeps compounding.",
                   [(fmt_k(terr[L]), f"Territory units {L} ({terr[L] / ford[L] * 100:.0f}% of Ford)"),
                    (fmt_pct(hev_c, d=0), f"Hybrid CAGR 2016–{L}"),
                    (f"{ford_hyb[L] / hev_L * 100:.1f}%", f"Ford share of hybrids {L}")],
-                  "Add HEV, PHEV and BEV Territory versions from the China line-up; protect the nameplate as Chinese brands scale.")
+                  "Add HEV, PHEV and BEV Territory versions from the China line-up to protect the nameplate."),
+        reco_card(3, "Growth bet", "#B37400", "#FDF1DC", "New minivan & sport car",
+                  "Both grew fast over the last three years and are small enough for one new nameplate to win real share.",
+                  [(fmt_pct(mv_c3, d=0), f"Minivan CAGR {P3}–{L}"), (fmt_pct(sp_c3, d=0), f"Sports CAGR {P3}–{L}"),
+                   (fmt_k(mv_tot + sp_tot), f"Combined segment units {L}")],
+                  "A family minivan to take on Sienna and a sub-Mustang sport compact to take on León and GTI."),
+    ]) + "</div>")
+
+    r1, r2, r3 = st.columns(3, gap="small")
+    with r1:
+        chart_title("Mexico-built Ford units by year")
+        fig = go.Figure(go.Bar(x=YEARS, y=ford_mx.values, marker_color="#12A0B0",
+                               text=[fmt_k(v) if y in (FIRST, L) else "" for y, v in ford_mx.items()],
+                               textposition="outside", cliponaxis=False, textfont=dict(size=11.5, color=INK2),
+                               hovertemplate="%{x}: %{y:,.0f}<extra></extra>"))
+        style(fig, CH, legend=False, hover="closest"); year_axis(fig, FIRST, L, step=2)
+        fig.update_layout(margin=dict(l=4, r=4, t=8, b=4)); fig.update_yaxes(showticklabels=False, range=[0, ford_mx.max() * 1.25])
+        show(fig)
+    with r2:
         chart_title("Territory units by year")
         ty = [y for y in YEARS if y >= 2022]
         fig = go.Figure(go.Bar(x=ty, y=terr.loc[ty], marker_color=FORD, text=[fmt_k(v) for v in terr.loc[ty]],
                                textposition="outside", cliponaxis=False, textfont=dict(size=11.5, color=INK2),
                                hovertemplate="%{x}: %{y:,.0f}<extra></extra>"))
-        style(fig, 250, legend=False, hover="closest"); year_axis(fig, ty[0], ty[-1])
+        style(fig, CH, legend=False, hover="closest"); year_axis(fig, ty[0], ty[-1])
         fig.update_layout(margin=dict(l=4, r=4, t=8, b=4)); fig.update_yaxes(showticklabels=False, range=[0, terr.max() * 1.25])
         show(fig)
     with r3:
-        reco_card(3, "Growth bet", "#B37400", "#FDF1DC", "New minivan & sport car",
-                  "Both segments grew fast over the last three years and are small enough "
-                  "for one new nameplate to win real share.",
-                  [(fmt_pct(mv_c3, d=0), f"Minivan CAGR {P3}–{L}"), (fmt_pct(sp_c3, d=0), f"Sports CAGR {P3}–{L}"),
-                   (fmt_k(mv_tot + sp_tot), f"Combined segment units {L}")],
-                  "A family minivan to take on Sienna and a sub-Mustang sport compact to take on León and GTI.")
-        lead_seg = st.segmented_control("Segment", ["Minivans", "Sports"], default="Minivans", key="reco_seg",
-                                        label_visibility="collapsed") or "Minivans"
-        chart_title(f"{lead_seg} leaders · {L}")
+        hl3, hr3 = st.columns([4, 5], vertical_alignment="center")
+        with hr3:
+            lead_seg = st.pills("Segment", ["Minivans", "Sports"], default="Minivans", key="reco_seg",
+                                label_visibility="collapsed") or "Minivans"
+        with hl3:
+            chart_title(f"Leaders {L}")
         rivals = {"Ford": FORD, "Sienna": RIVAL} if lead_seg == "Minivans" else {"Ford": FORD, "GTI": RIVAL, "Leon": RIVAL}
-        leader_chart(seg_leaders(lead_seg), rivals)
-
-    st.html(f"""<div class="legend-inline" style="margin-top:6px">
-      <span><i style="background:{FORD}"></i>Ford</span><span><i style="background:{RIVAL}"></i>Key rival</span>
-      <span><i style="background:{CONTEXT}"></i>Other models</span></div>""")
+        leader_chart(seg_leaders(lead_seg), rivals, h=CH - 22)
+        st.html(f"""<div class="legend-inline" style="justify-content:flex-end;margin:0">
+          <span><i style="background:{FORD}"></i>Ford</span><span><i style="background:{RIVAL}"></i>Key rival</span>
+          <span><i style="background:{CONTEXT}"></i>Other models</span></div>""")
 
 st.html(f"""<div class="foot">Source: INEGI · Registro Administrativo de la Industria Automotriz de Vehículos Ligeros (RAIAVL),
 retail sales {FIRST}–{LAST}. BYD, Tesla and other non-reporting brands are excluded, so EV volumes are understated.
