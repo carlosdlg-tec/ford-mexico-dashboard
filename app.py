@@ -126,7 +126,7 @@ div[data-testid="stMetricValue"] {{color: {NAVY}; font-weight: 700;}}
 div[data-testid="stMetricLabel"] p {{color: {MUTED}; font-size: 13px; text-transform: uppercase; letter-spacing: .05em;}}
 .stTabs [data-baseweb="tab-list"] {{gap: 4px; border-bottom: 1px solid {GRID};}}
 .stTabs [data-baseweb="tab"] {{font-size: 15px; font-weight: 600; padding: 10px 16px;}}
-.reco {{background: #fff; border: 1px solid {GRID}; border-top: 5px solid var(--c); border-radius: 14px; padding: 18px 20px 6px; min-height: 345px; margin-bottom: 8px;}}
+.reco {{background: #fff; border: 1px solid {GRID}; border-top: 5px solid var(--c); border-radius: 14px; padding: 18px 20px 6px; min-height: 430px; margin-bottom: 8px;}}
 .reco .tag {{display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
   color: var(--c); background: var(--t); border-radius: 999px; padding: 3px 10px;}}
 .reco h4 {{font-size: 20px; color: {INK}; margin: 10px 0 2px; padding: 0; line-height: 1.2;}}
@@ -454,23 +454,51 @@ with t1:
         show(fig)
 
     # 1.3 Country of origin
-    chart_title("Where Ford's Mexico sales are built", f"Units by country of manufacture · {PER}")
+    head_l, head_r = st.columns([3, 2])
+    with head_r:
+        co_mode = st.segmented_control("View", ["Units", "% share"], default="Units", key="ford_co_mode",
+                                       label_visibility="collapsed")
+    with head_l:
+        chart_title("Where Ford's Mexico sales are built",
+                    f"{'Share of Ford units' if co_mode == '% share' else 'Units'} by country of manufacture · {PER}")
     CO_SHOW = {"United States": "#1F4FB8", "Mexico": "#12A0B0", "China": "#D98E04", "Argentina": "#C2508F"}
-    co = pivot(ford_df, "country").reindex(columns=list(CO_SHOW), fill_value=0).loc[yrs]
-    fig = go.Figure()
-    for cname, col in CO_SHOW.items():
-        fig.add_scatter(x=yrs, y=co[cname].values, name=cname, mode="lines+markers", line=dict(color=col, width=2.5),
-                        marker=dict(size=7, color=col, line=dict(color="white", width=1.5)),
-                        hovertemplate=f"{cname}: %{{y:,.0f}}<extra></extra>")
-    end_labels(fig, [(Y1, co.loc[Y1, c], fmt_k(co.loc[Y1, c])) for c in CO_SHOW], 380, co.max().max(), xshift=26)
-    style(fig, 380); fig.update_layout(legend=dict(traceorder="normal"))
-    year_axis(fig, Y0, Y1); bands(fig)
-    fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(rangemode="tozero")
-    show(fig)
     co_all = pivot(ford_df, "country").loc[yrs]
     hidden = [c for c in co_all.columns[co_all.sum() > 0] if c not in CO_SHOW]
+    co = co_all.reindex(columns=list(CO_SHOW), fill_value=0)
+    fig = go.Figure()
+    if co_mode == "% share":
+        # 100% stacked: Mexico on the baseline so the shift from local build to imports reads directly
+        co_pct = co.assign(Other=co_all[hidden].sum(axis=1) if hidden else 0)
+        units = co_pct.copy()
+        co_pct = co_pct.div(co_pct.sum(axis=1).replace(0, np.nan), axis=0) * 100
+        stack = {"Mexico": (CO_SHOW["Mexico"], "white"), "United States": (CO_SHOW["United States"], "white"),
+                 "China": (CO_SHOW["China"], INK), "Argentina": (CO_SHOW["Argentina"], "white"),
+                 "Other": (CONTEXT, INK)}
+        for cname, (col, txt) in stack.items():
+            if cname == "Other" and not hidden:
+                continue
+            v = co_pct[cname]
+            fig.add_bar(x=yrs, y=v.values, name=cname, marker=dict(color=col, line=dict(color="white", width=1.5)),
+                        text=[f"{p:.0f}%" if p >= 4 else "" for p in v.fillna(0)], textposition="inside",
+                        insidetextanchor="middle", textangle=0, insidetextfont=dict(color=txt, size=11.5),
+                        customdata=units[cname].values,
+                        hovertemplate=f"{cname}: %{{y:.1f}}% (%{{customdata:,.0f}} units)<extra></extra>")
+        style(fig, 400); fig.update_layout(barmode="stack", legend_traceorder="normal", uniformtext=dict(minsize=9, mode="hide"))
+        year_axis(fig, Y0, Y1); bands(fig, labels=False)
+        fig.update_yaxes(ticksuffix="%", range=[0, 100])
+    else:
+        for cname, col in CO_SHOW.items():
+            fig.add_scatter(x=yrs, y=co[cname].values, name=cname, mode="lines+markers", line=dict(color=col, width=2.5),
+                            marker=dict(size=7, color=col, line=dict(color="white", width=1.5)),
+                            hovertemplate=f"{cname}: %{{y:,.0f}}<extra></extra>")
+        end_labels(fig, [(Y1, co.loc[Y1, c], fmt_k(co.loc[Y1, c])) for c in CO_SHOW], 380, co.max().max(), xshift=26)
+        style(fig, 380); fig.update_layout(legend=dict(traceorder="normal"))
+        year_axis(fig, Y0, Y1); bands(fig)
+        fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(rangemode="tozero")
+    show(fig)
     if hidden:
-        st.caption(f"Not shown: {', '.join(sorted(hidden))} "
+        lead = "Other (grey)" if co_mode == "% share" else "Not shown"
+        st.caption(f"{lead}: {', '.join(sorted(hidden))} "
                    f"({fmt_k(co_all[hidden].sum().sum())} units over {PER}).")
 
     data_table(pd.DataFrame({"Ford units": ford, "Market units": market, "Share %": (share * 100).round(2),
@@ -779,19 +807,20 @@ with t4:
     st.caption("Bubble size = segment units. Hybrids are a powertrain, not a segment, so they sit inside these bubbles.")
 
     # Evidence (latest year, fixed windows so the recommendations stay stable)
-    L, P5 = LAST, LAST - 5
-    mv_tot = seg_mkt.loc[L, "Minivans"]
-    mv_c10 = cagr(seg_mkt.loc[FIRST, "Minivans"], mv_tot, L - FIRST)
-    mv_c5 = cagr(seg_mkt.loc[P5, "Minivans"], mv_tot, 5)
-    ford_mv = seg_ford.loc[L, "Minivans"]
+    L, P3 = LAST, LAST - 3
+    # 1 · Mexico production vs Chinese imports
+    ford_mx = ford_df[ford_df["country"] == "Mexico"].groupby("year")["units"].sum().reindex(YEARS, fill_value=0)
+    cn_units = by_year(df[df["brand"].isin(CHINESE_BRANDS)])
+    cn_share = cn_units / market
+    # 2 · Territory
     terr = ford_df[(ford_df["model"] == "Territory")].groupby("year")["units"].sum().reindex(YEARS, fill_value=0)
     hev_L = tech.loc[L, "Hybrid (HEV)"]
     hev_c = cagr(tech.loc[2016, "Hybrid (HEV)"], hev_L, L - 2016)
     ford_hyb = ford_df[ford_df["model"].str.contains("HEV|Hibrid|Hybrid", case=False, regex=True)].groupby("year")["units"].sum().reindex(YEARS, fill_value=0)
-    sp_c5 = cagr(seg_mkt.loc[P5, "Sports"], seg_mkt.loc[L, "Sports"], 5)
-    vw_seat = df[(df["year"] == L) & (((df["brand"] == "Volkswagen") & (df["model"] == "GTI")) |
-                                      ((df["brand"] == "SEAT") & (df["model"] == "Leon")))]["units"].sum()
-    mustang = ford_df[(ford_df["year"] == L) & (ford_df["model"] == "Mustang")]["units"].sum()
+    # 3 · Minivan + sports car
+    mv_tot, sp_tot = seg_mkt.loc[L, "Minivans"], seg_mkt.loc[L, "Sports"]
+    mv_c3 = cagr(seg_mkt.loc[P3, "Minivans"], mv_tot, 3)
+    sp_c3 = cagr(seg_mkt.loc[P3, "Sports"], sp_tot, 3)
 
     def reco_card(n: int, tag: str, color: str, tint: str, title: str, why: str, kpis: list[tuple[str, str]], move: str) -> None:
         k = "".join(f'<div class="k"><b>{v}</b><span>{lbl}</span></div>' for v, lbl in kpis)
@@ -825,20 +854,29 @@ with t4:
 
     r1, r2, r3 = st.columns(3, gap="medium")
     with r1:
-        reco_card(1, "Growth bet", "#B37400", "#FDF1DC", "New minivan, with a hybrid option",
-                  "Fastest-growing segment; Ford has no true minivan.",
-                  [(fmt_pct(mv_c5, d=0), f"Minivan CAGR {P5}–{L}"), (fmt_k(mv_tot), f"Segment units {L}"),
-                   (f"{ford_mv / mv_tot * 100:.1f}%", f"Ford share {L} (Expedition)")],
-                  "Family minivan with HEV trim, sourced from Ford's global van platforms; target Sienna buyers.")
-        chart_title(f"Minivan leaders · {L}")
-        leader_chart(seg_leaders("Minivans"), {"Ford": FORD, "Sienna": RIVAL})
+        reco_card(1, "Cost position", "#0E7C88", "#DDF3F5", "Build more, and more models, in Mexico",
+                  f"Mexico-built sales fell from {fmt_k(ford_mx[FIRST])} to {fmt_k(ford_mx[L])}; "
+                  "imports cost more as Chinese brands win on price.",
+                  [(fmt_k(ford_mx[L]), f"Mexico-built Ford units {L} ({fmt_k(ford_mx[FIRST])} in {FIRST})"),
+                   (f"{ford_mx[L] / ford[L] * 100:.0f}%", f"Of Ford built in Mexico ({ford_mx[FIRST] / ford[FIRST] * 100:.0f}% in {FIRST})"),
+                   (f"{cn_share[L] * 100:.0f}%", f"Chinese brands' share {L}")],
+                  "Raise local output and widen the Mexico-built line-up beyond Bronco Sport and Maverick "
+                  "to price against Chinese brands.")
+        chart_title("Mexico-built Ford units by year")
+        fig = go.Figure(go.Bar(x=YEARS, y=ford_mx.values, marker_color="#12A0B0",
+                               text=[fmt_k(v) if y in (FIRST, L) else "" for y, v in ford_mx.items()],
+                               textposition="outside", cliponaxis=False, textfont=dict(size=11.5, color=INK2),
+                               hovertemplate="%{x}: %{y:,.0f}<extra></extra>"))
+        style(fig, 250, legend=False, hover="closest"); year_axis(fig, FIRST, L, step=2)
+        fig.update_layout(margin=dict(l=4, r=4, t=8, b=4)); fig.update_yaxes(showticklabels=False, range=[0, ford_mx.max() * 1.25])
+        show(fig)
     with r2:
-        reco_card(2, "Quick win", FORD, "#E4ECFB", "Extend Territory with hybrid trims",
-                  "Territory is Ford's #1 nameplate; hybrids are the volume EV tech.",
+        reco_card(2, "Quick win", FORD, "#E4ECFB", "Extend Territory with more EV & hybrid options",
+                  "Territory is Ford's #1 nameplate; electrified demand keeps compounding.",
                   [(fmt_k(terr[L]), f"Territory units {L} ({terr[L] / ford[L] * 100:.0f}% of Ford)"),
                    (fmt_pct(hev_c, d=0), f"Hybrid CAGR 2016–{L}"),
                    (f"{ford_hyb[L] / hev_L * 100:.1f}%", f"Ford share of hybrids {L}")],
-                  "Add HEV/PHEV Territory from the China line-up; protect the nameplate as Chinese brands scale.")
+                  "Add HEV, PHEV and BEV Territory versions from the China line-up; protect the nameplate as Chinese brands scale.")
         chart_title("Territory units by year")
         ty = [y for y in YEARS if y >= 2022]
         fig = go.Figure(go.Bar(x=ty, y=terr.loc[ty], marker_color=FORD, text=[fmt_k(v) for v in terr.loc[ty]],
@@ -848,13 +886,17 @@ with t4:
         fig.update_layout(margin=dict(l=4, r=4, t=8, b=4)); fig.update_yaxes(showticklabels=False, range=[0, terr.max() * 1.25])
         show(fig)
     with r3:
-        reco_card(3, "Brand halo", NEG, "#FBE6E4", "Sport compact vs GTI & León",
-                  "Sports demand is recovering; VW group owns the affordable hot-hatch.",
-                  [(fmt_pct(sp_c5, d=0), f"Sports CAGR {P5}–{L}"), (fmt_k(vw_seat), f"GTI + León units {L}"),
-                   (fmt_k(mustang), f"Mustang units {L}")],
-                  "A sub-Mustang performance compact (ST badge) to win younger buyers and lift brand heat.")
-        chart_title(f"Sports leaders · {L}")
-        leader_chart(seg_leaders("Sports"), {"Ford": FORD, "GTI": RIVAL, "Leon": RIVAL})
+        reco_card(3, "Growth bet", "#B37400", "#FDF1DC", "New minivan & sport car",
+                  "Both segments grew fast over the last three years and are small enough "
+                  "for one new nameplate to win real share.",
+                  [(fmt_pct(mv_c3, d=0), f"Minivan CAGR {P3}–{L}"), (fmt_pct(sp_c3, d=0), f"Sports CAGR {P3}–{L}"),
+                   (fmt_k(mv_tot + sp_tot), f"Combined segment units {L}")],
+                  "A family minivan to take on Sienna and a sub-Mustang sport compact to take on León and GTI.")
+        lead_seg = st.segmented_control("Segment", ["Minivans", "Sports"], default="Minivans", key="reco_seg",
+                                        label_visibility="collapsed") or "Minivans"
+        chart_title(f"{lead_seg} leaders · {L}")
+        rivals = {"Ford": FORD, "Sienna": RIVAL} if lead_seg == "Minivans" else {"Ford": FORD, "GTI": RIVAL, "Leon": RIVAL}
+        leader_chart(seg_leaders(lead_seg), rivals)
 
     st.html(f"""<div class="legend-inline" style="margin-top:6px">
       <span><i style="background:{FORD}"></i>Ford</span><span><i style="background:{RIVAL}"></i>Key rival</span>
