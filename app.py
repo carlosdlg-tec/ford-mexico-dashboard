@@ -261,8 +261,9 @@ def end_labels(fig: go.Figure, pts: list[tuple], h: int, ymax: float, ymin: floa
                            yshift=py - (y - ymin) * ppu, font=dict(size=12, color=INK if bold else INK2))
 
 
-def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, **kw) -> None:
-    """Shade COVID-19 (2020) and the semiconductor shortage (2021 - mid-2023)."""
+def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, xmap=None, **kw) -> None:
+    """Shade COVID-19 (2020) and the semiconductor shortage (2021 - mid-2023).
+    xmap converts annual edges (e.g. 2019.5) to another axis's coordinates, such as a multi-category axis."""
     if not SHOW_BANDS:
         return
     lo, hi = Y0, Y1  # only shade the years that are on screen
@@ -278,6 +279,8 @@ def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, **kw) -> No
             continue
         extra = dict(annotation_text=t, annotation_position="top left",
                      annotation=dict(yshift=0 if t == "COVID-19" else -15, font=dict(size=11, color=MUTED))) if labels else {}
+        if xmap and mode == "annual":
+            a, b = xmap(a), xmap(b)
         fig.add_vrect(x0=a, x1=b, fillcolor=c, line_width=0, layer="below", **extra, **kw)
 
 
@@ -489,6 +492,8 @@ with t1:
                         cliponaxis=False)
         style(fig, 400, hover="closest"); fig.update_layout(barmode="stack", legend_traceorder="normal", bargap=0.18)
         fig.update_xaxes(tickfont=dict(size=11, color=MUTED))
+        # two bars per year: year y sits at category positions 2(y-Y0) and 2(y-Y0)+1
+        bands(fig, xmap=lambda e: 2 * (e - Y0) + 0.5)
         fig.update_yaxes(range=[0, tot.max() * 1.15])
     else:
         for cname, col in CO_SHOW.items():
