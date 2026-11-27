@@ -4,7 +4,7 @@ Streamlit dashboard for a strategy review of Ford in the Mexican light-vehicle m
 
 | Tab | What it shows |
 |---|---|
-| **01 · Ford today** | Units by year, market share, units by car segment (units / % mix), top 10 nameplates for a year you pick from a dropdown, and units by country of manufacture (United States, Mexico, China, Argentina) as a line chart or a 100% stacked bar of each country's share, where the other countries are grouped in grey and a note lists them |
+| **01 · Ford today** | Units by year, market share, units by car segment (units / % mix), top 10 nameplates for a year you pick from a dropdown, and units by country of manufacture (United States, Mexico, China, Argentina) as a line chart, with a Mexico vs China view that bolds Mexico's first-year and both countries' latest-year units; a note lists the countries not shown |
 | **02 · Industry** | Total market units by year, with a one-click switch between the full market and a stacked split by car segment, plus a **head-to-head comparison** of any two companies, or of one company against all Chinese brands combined: side-by-side, equal-width charts of total units by year and units by year for one car segment picked from a dropdown |
 | **03 · Customer preferences** | CAGR by segment for the selected period, segment CAGR heatmap across the cycle (Pre-COVID 2015–19, COVID + chips 2019–22, Recovery 2022–25, Decade 2015–25), growth index and CAGR for emerging segments (minivans, hybrids, PHEV, BEV), electrified sales and penetration |
 | **Recommendations** | Where-to-play matrix plus 3 moves: build more (and more models) in Mexico to price against Chinese brands, extend Territory with EV and hybrid options, and a new minivan and sport car |
