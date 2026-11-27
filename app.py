@@ -122,6 +122,9 @@ html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]):not([translate=
 .legend-inline {{display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: {INK2}; margin: 4px 0 8px;}}
 .legend-inline i {{display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px;}}
 div[data-testid="stMetric"] {{background: #fff; border-radius: 12px;}}
+/* KPI boxes in a row share one height, even when one has no delta line */
+div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"]:only-child:has(> div[data-testid="stMetric"]) {{flex: 1 1 auto;}}
+div[data-testid="stElementContainer"] > div[data-testid="stMetric"] {{height: 100%;}}
 div[data-testid="stMetricValue"] {{color: {NAVY}; font-weight: 700;}}
 div[data-testid="stMetricLabel"] p {{color: {MUTED}; font-size: 13px; text-transform: uppercase; letter-spacing: .05em;}}
 .stTabs [data-baseweb="tab-list"] {{gap: 4px; border-bottom: 1px solid {GRID};}}
