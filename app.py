@@ -42,6 +42,7 @@ POS, NEG = "#1F4FB8", "#C2413A"  # diverging poles (growth / decline)
 INK, INK2, MUTED = "#0B1530", "#3E4A66", "#7A849B"
 GRID, AXIS = "#E7EAF1", "#C9CFDA"
 FONT = '"Open Sans", Arial, sans-serif'
+HERO_FONT = '"Aptos Serif", Georgia, "Times New Roman", serif'  # main title block
 BAND_COVID = "rgba(0,9,91,0.09)"
 BAND_CHIP = "rgba(0,9,91,0.045)"
 
@@ -95,6 +96,8 @@ CSS = f"""
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&display=swap');
 .block-container {{padding-top: 3.2rem; padding-bottom: 3rem; max-width: 1320px;}}
 html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]):not([translate="no"]) {{font-family: {FONT} !important;}}
+/* Header block in Aptos Serif (shown where the font is installed; Georgia otherwise). Beats the global font rule above. */
+.stApp .hero, .stApp .hero *:not([data-testid="stIconMaterial"]):not([translate="no"]) {{font-family: {HERO_FONT} !important;}}
 /* Hero colours are taken from the Ford oval: deep navy #08142E -> #17326E -> #0D69A9, highlight #4CA9E3, chrome rim #D3D2D2 */
 .hero {{border-radius: 18px; padding: 30px 34px 26px; color: #fff; margin-bottom: 6px;
   border: 1px solid rgba(211,210,210,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
