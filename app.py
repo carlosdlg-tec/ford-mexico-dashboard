@@ -621,49 +621,6 @@ with t3:
     c[2].metric(f"Minivan CAGR {PER}", fmt_pct(mv_cagr), f"{fmt_k(seg_mkt.loc[Y1,'Minivans'])} units in {Y1}", delta_color="off", delta_arrow="off", border=True)
     c[3].metric(f"Hybrid CAGR {hev_y0}–{Y1}", fmt_pct(hev_cagr), f"{fmt_k(tech.loc[Y1,'Hybrid (HEV)'])} units in {Y1}", delta_color="off", delta_arrow="off", border=True)
 
-    section("", "Where Ford should invest", f"Segment attractiveness vs Ford's position · growth {PER}, Ford units {Y1}")
-
-    # Where-to-play matrix
-    seg_tbl = pd.DataFrame({
-        "cagr": seg_cagr * 100,
-        "ford_units": seg_ford.loc[Y1],
-        "ford_share": (seg_ford.loc[Y1] / seg_mkt.loc[Y1].replace(0, np.nan)).fillna(0) * 100,
-        "units": seg_mkt.loc[Y1],
-    }).dropna(subset=["cagr"])
-    x_ref, y_ref = mkt_cagr * 100, seg_tbl["ford_units"].mean()  # Ford's average units per segment
-    fig = go.Figure()
-    # big bubbles first so small ones stay visible; nudge labels where segments cluster near zero Ford units
-    LBL_POS = {"Subcompact": "top left", "Sports": "middle right"}
-    for sname, r in seg_tbl.sort_values("units", ascending=False).iterrows():
-        fig.add_scatter(
-            x=[r["cagr"]], y=[r["ford_units"]], mode="markers+text", name=sname, text=[f"<b>{sname}</b>"],
-            textposition=LBL_POS.get(sname, "top center"), textfont=dict(size=12.5, color=INK),
-            marker=dict(size=max(14, np.sqrt(r["units"]) / 8.5), color=SEG_COL.get(sname, CONTEXT), opacity=0.85,
-                        line=dict(color="white", width=2)),
-            customdata=[[r["units"], r["ford_share"]]],
-            hovertemplate=(f"<b>{sname}</b><br>CAGR %{{x:.1f}}%<br>Ford units {Y1}: %{{y:,.0f}} "
-                           f"(%{{customdata[1]:.1f}}% of segment)<br>Segment {Y1}: %{{customdata[0]:,.0f}} units<extra></extra>"),
-        )
-    fig.add_vline(x=x_ref, line=dict(color=AXIS, width=1.5, dash="dash"))
-    fig.add_hline(y=y_ref, line=dict(color=AXIS, width=1.5, dash="dash"))
-    xr = [min(seg_tbl["cagr"].min(), x_ref) - 4, max(seg_tbl["cagr"].max(), x_ref) + 5]
-    y_top = max(seg_tbl["ford_units"].max(), y_ref) * 1.3
-    yr = [-y_top * 0.08, y_top]
-    for txt, xx, yy, xa, ya in (("GROW & DEFEND", xr[1], yr[1], "right", "top"), ("INVEST TO ENTER", xr[1], yr[0], "right", "bottom"),
-                                ("HARVEST", xr[0], yr[1], "left", "top"), ("DEPRIORITIZE", xr[0], yr[0], "left", "bottom")):
-        fig.add_annotation(x=xx, y=yy, text=txt, showarrow=False, xanchor=xa, yanchor=ya,
-                           font=dict(size=11.5, color=MUTED, family=FONT))
-    style(fig, 430, legend=False, hover="closest")
-    fig.update_xaxes(title=dict(text=f"Segment CAGR {PER} →", font=dict(size=12.5, color=MUTED)), ticksuffix="%",
-                     showgrid=True, gridcolor=GRID, range=xr, zeroline=False)
-    fig.update_yaxes(title=dict(text=f"Ford units sold {Y1} →", font=dict(size=12.5, color=MUTED)), range=yr)
-    fig.add_annotation(x=x_ref, y=yr[1], text=f"Market {fmt_pct(mkt_cagr)}", showarrow=False, yanchor="top", xshift=46,
-                       font=dict(size=11, color=MUTED))
-    fig.add_annotation(x=xr[0], y=y_ref, text=f"Ford avg per segment {fmt_k(y_ref)}", showarrow=False, xanchor="left", yshift=10,
-                       font=dict(size=11, color=MUTED))
-    show(fig)
-    st.caption("Bubble size = Total units sold in Mexico by segment. Hybrids & EVs are within these car segments.")
-
     # 3.1 Segment growth
     a, b = st.columns([2, 3], gap="large")
     with a:
@@ -707,6 +664,83 @@ with t3:
         fig.update_yaxes(autorange="reversed", showgrid=False, tickfont=dict(color=INK2, size=12.5))
         fig.update_xaxes(side="top", tickfont=dict(color=INK2, size=12))
         show(fig)
+
+    section("", "Where Ford should invest", f"Segment attractiveness vs Ford's position · growth {PER}, Ford units {Y1}")
+
+    # Where-to-play matrix
+    seg_tbl = pd.DataFrame({
+        "cagr": seg_cagr * 100,
+        "ford_units": seg_ford.loc[Y1],
+        "ford_share": (seg_ford.loc[Y1] / seg_mkt.loc[Y1].replace(0, np.nan)).fillna(0) * 100,
+        "units": seg_mkt.loc[Y1],
+    }).dropna(subset=["cagr"])
+    x_ref, y_ref = mkt_cagr * 100, seg_tbl["ford_units"].mean()  # Ford's average units per segment
+    # Bubble diameters in px; the y range is padded so the lowest bubbles sit fully above the x axis
+    PLOT_H, PLOT_W = 355, 900  # approx. plot-area size in px at a typical laptop width
+    seg_tbl["size"] = np.maximum(14, np.sqrt(seg_tbl["units"]) / 10)
+    rad = seg_tbl["size"] / 2 + 3
+    xr = [min(seg_tbl["cagr"].min(), x_ref) - 4, max(seg_tbl["cagr"].max(), x_ref) + 5]
+    y_top = max(seg_tbl["ford_units"].max(), y_ref) * 1.3
+    # for each bubble: y - r*(y_top - lo)/H >= lo  ->  lo <= (y - r*y_top/H) / (1 - r/H)
+    lo = min(0.0, ((seg_tbl["ford_units"] - rad * y_top / PLOT_H) / (1 - rad / PLOT_H)).min())
+    yr = [lo, y_top]
+    upp = (yr[1] - yr[0]) / PLOT_H  # data units per px
+
+    fig = go.Figure()
+    for sname, r in seg_tbl.sort_values("units", ascending=False).iterrows():  # big first, small stay on top
+        fig.add_scatter(
+            x=[r["cagr"]], y=[r["ford_units"]], mode="markers", name=sname,
+            marker=dict(size=r["size"], color=SEG_COL.get(sname, CONTEXT), opacity=0.85, line=dict(color="white", width=2)),
+            customdata=[[r["units"], r["ford_share"]]],
+            hovertemplate=(f"<b>{sname}</b><br>CAGR %{{x:.1f}}%<br>Ford units {Y1}: %{{y:,.0f}} "
+                           f"(%{{customdata[1]:.1f}}% of segment)<br>Segment {Y1}: %{{customdata[0]:,.0f}} units<extra></extra>"),
+        )
+    # Labels centred on each bubble: inside the big ones (white), just above the small ones. A label above a
+    # small bubble steps up only if it would sit on another bubble or label.
+    px = lambda r: ((r["cagr"] - xr[0]) / (xr[1] - xr[0]) * PLOT_W, (r["ford_units"] - yr[0]) / upp)
+    obstacles = {n: (*px(r), r["size"] / 2) for n, r in seg_tbl.iterrows()}  # name -> (cx, cy, radius)
+    labels = []  # (cx, bottom, width, height)
+    for sname, r in seg_tbl.sort_values("size", ascending=False).iterrows():
+        cx, cy = px(r)
+        d = r["size"]
+        if d >= 45:  # inside: break long names over two lines so they stay within the bubble
+            txt = "Sub-<br>compact" if sname == "Subcompact" and d < 75 else sname
+            lines = txt.split("<br>")
+            w, h = max(len(t) for t in lines) * 6.9, 14 * len(lines)
+            labels.append((cx, cy - h / 2, w, h))
+            fig.add_annotation(x=r["cagr"], y=r["ford_units"], text=f"<b>{txt}</b>", showarrow=False,
+                               xanchor="center", yanchor="middle", font=dict(size=11, color="white"))
+            continue
+        w, h = len(sname) * 7.8 + 4, 16
+        bottom = cy + d / 2 + 3
+
+        def clash(b):
+            hit_label = any(abs(cx - lx) < (w + lw) / 2 and b < lb + lh and lb < b + h for lx, lb, lw, lh in labels)
+            hit_bubble = any(n != sname and abs(cx - ox) < w / 2 + orad and b < oy + orad and oy - orad < b + h
+                             for n, (ox, oy, orad) in obstacles.items())
+            return hit_label or hit_bubble
+
+        while clash(bottom):
+            bottom += 4
+        labels.append((cx, bottom, w, h))
+        fig.add_annotation(x=r["cagr"], y=r["ford_units"], text=f"<b>{sname}</b>", showarrow=False, xanchor="center",
+                           yanchor="bottom", yshift=bottom - cy, font=dict(size=12.5, color=INK))
+    fig.add_vline(x=x_ref, line=dict(color=AXIS, width=1.5, dash="dash"))
+    fig.add_hline(y=y_ref, line=dict(color=AXIS, width=1.5, dash="dash"))
+    for txt, xx, yy, xa, ya in (("GROW & DEFEND", xr[1], yr[1], "right", "top"), ("INVEST TO ENTER", xr[1], yr[0], "right", "bottom"),
+                                ("HARVEST", xr[0], yr[1], "left", "top"), ("DEPRIORITIZE", xr[0], yr[0], "left", "bottom")):
+        fig.add_annotation(x=xx, y=yy, text=txt, showarrow=False, xanchor=xa, yanchor=ya,
+                           font=dict(size=11.5, color=MUTED, family=FONT))
+    style(fig, 430, legend=False, hover="closest")
+    fig.update_xaxes(title=dict(text=f"Segment CAGR {PER} →", font=dict(size=12.5, color=MUTED)), ticksuffix="%",
+                     showgrid=True, gridcolor=GRID, range=xr, zeroline=False)
+    fig.update_yaxes(title=dict(text=f"Ford units sold {Y1} →", font=dict(size=12.5, color=MUTED)), range=yr)
+    fig.add_annotation(x=x_ref, y=yr[1], text=f"Market {fmt_pct(mkt_cagr)}", showarrow=False, yanchor="top", xshift=46,
+                       font=dict(size=11, color=MUTED))
+    fig.add_annotation(x=xr[0], y=y_ref, text=f"Ford avg per segment {fmt_k(y_ref)}", showarrow=False, xanchor="left", yshift=10,
+                       font=dict(size=11, color=MUTED))
+    show(fig)
+    st.caption("Bubble size = Total units sold in Mexico by segment. Hybrids & EVs are within these car segments.")
 
     # 3.2 Emerging segments
     section("", "Emerging segments", "Minivans and hybrids are the fastest-growing pockets of demand")
