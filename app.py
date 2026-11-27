@@ -459,35 +459,54 @@ with t1:
         show(fig)
 
     # 1.3 Country of origin
-    MX_CN = "Mexico vs China"
-    head_l, head_r = st.columns([3, 2])
+    MX_CN, MX_CN_SEG = "Mexico vs China", "By segment"
+    head_l, head_r = st.columns([2, 3])
     with head_r:
-        co_mode = st.segmented_control("View", ["All countries", MX_CN], default="All countries", key="ford_co_mode",
-                                       label_visibility="collapsed")
+        co_mode = st.segmented_control("View", ["All countries", MX_CN, MX_CN_SEG], default="All countries",
+                                       key="ford_co_mode", label_visibility="collapsed")
     with head_l:
-        chart_title("Where Ford's Mexico sales are built", f"Units by country of manufacture · {PER}")
+        chart_title("Where Ford's Mexico sales are built",
+                    f"Units by country of manufacture{' and car segment' if co_mode == MX_CN_SEG else ''} · {PER}")
     CO_COL = {"United States": "#1F4FB8", "Mexico": "#12A0B0", "China": "#D98E04", "Argentina": "#C2508F"}
-    CO_SHOW = {c: CO_COL[c] for c in (["Mexico", "China"] if co_mode == MX_CN else CO_COL)}
+    CO_SHOW = {c: CO_COL[c] for c in (["Mexico", "China"] if co_mode in (MX_CN, MX_CN_SEG) else CO_COL)}
     co_all = pivot(ford_df, "country").loc[yrs]
     hidden = [c for c in co_all.columns[co_all.sum() > 0] if c not in CO_SHOW]
     co = co_all.reindex(columns=list(CO_SHOW), fill_value=0)
     fig = go.Figure()
-    for cname, col in CO_SHOW.items():
-        fig.add_scatter(x=yrs, y=co[cname].values, name=cname, mode="lines+markers", line=dict(color=col, width=2.5),
-                        marker=dict(size=7, color=col, line=dict(color="white", width=1.5)),
-                        hovertemplate=f"{cname}: %{{y:,.0f}}<extra></extra>")
-    focus = co_mode == MX_CN
-    end_labels(fig, [(Y1, co.loc[Y1, c], fmt_k(co.loc[Y1, c])) for c in CO_SHOW], 380, co.max().max(), xshift=26, bold=focus)
-    if focus:  # Mexico's starting volume, bold, to read against the 2025 end labels
-        fig.add_annotation(x=Y0, y=co.loc[Y0, "Mexico"], text=f"<b>{fmt_k(co.loc[Y0, 'Mexico'])}</b>", showarrow=False,
-                           yshift=16, font=dict(size=12, color=INK))
-    style(fig, 380); fig.update_layout(legend=dict(traceorder="normal"))
-    year_axis(fig, Y0, Y1); bands(fig)
-    fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(range=[0, co.max().max() * 1.15])
+    if co_mode == MX_CN_SEG:
+        # One Mexico bar and one China bar per year, each stacked by car segment
+        mc = (ford_df[ford_df["country"].isin(["Mexico", "China"]) & ford_df["year"].between(Y0, Y1)]
+              .pivot_table(index=["year", "country"], columns="segment", values="units", aggfunc="sum")
+              .reindex(pd.MultiIndex.from_product([yrs, ["Mexico", "China"]]), fill_value=0).fillna(0))
+        x = [[str(y) for y, _ in mc.index], ["MX" if c == "Mexico" else "CN" for _, c in mc.index]]
+        for sname in [s for s in SEG_ORDER if s in mc.columns and mc[s].sum() > 0]:
+            fig.add_bar(x=x, y=mc[sname].values, name=sname, marker=dict(color=SEG_COL[sname], line=dict(color="white", width=1)),
+                        customdata=[c for _, c in mc.index],
+                        hovertemplate=f"%{{customdata}} · {sname}: %{{y:,.0f}}<extra></extra>")
+        tot = mc.sum(axis=1)
+        fig.add_scatter(x=x, y=tot.values, mode="text", text=[fmt_k(v) if v else "" for v in tot.values],
+                        textposition="top center", textfont=dict(size=10.5, color=INK2), showlegend=False, hoverinfo="skip",
+                        cliponaxis=False)
+        style(fig, 400, hover="closest"); fig.update_layout(barmode="stack", legend_traceorder="normal", bargap=0.18)
+        fig.update_xaxes(tickfont=dict(size=11, color=MUTED))
+        fig.update_yaxes(range=[0, tot.max() * 1.15])
+    else:
+        for cname, col in CO_SHOW.items():
+            fig.add_scatter(x=yrs, y=co[cname].values, name=cname, mode="lines+markers", line=dict(color=col, width=2.5),
+                            marker=dict(size=7, color=col, line=dict(color="white", width=1.5)),
+                            hovertemplate=f"{cname}: %{{y:,.0f}}<extra></extra>")
+        focus = co_mode == MX_CN
+        end_labels(fig, [(Y1, co.loc[Y1, c], fmt_k(co.loc[Y1, c])) for c in CO_SHOW], 380, co.max().max(), xshift=26, bold=focus)
+        if focus:  # Mexico's starting volume, bold, to read against the 2025 end labels
+            fig.add_annotation(x=Y0, y=co.loc[Y0, "Mexico"], text=f"<b>{fmt_k(co.loc[Y0, 'Mexico'])}</b>", showarrow=False,
+                               yshift=16, font=dict(size=12, color=INK))
+        style(fig, 380); fig.update_layout(legend=dict(traceorder="normal"))
+        year_axis(fig, Y0, Y1); bands(fig)
+        fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(range=[0, co.max().max() * 1.15])
     show(fig)
     if hidden:
-        st.caption(f"Not shown: {', '.join(sorted(hidden))} "
-                   f"({fmt_k(co_all[hidden].sum().sum())} units over {PER}).")
+        st.caption(("MX = built in Mexico, CN = built in China. " if co_mode == MX_CN_SEG else "")
+                   + f"Not shown: {', '.join(sorted(hidden))} ({fmt_k(co_all[hidden].sum().sum())} units over {PER}).")
 
     data_table(pd.DataFrame({"Ford units": ford, "Market units": market, "Share %": (share * 100).round(2),
                              "Rank": ford_rank}).join(seg_ford.add_prefix("Ford · ")).loc[Y0:Y1].astype(float).round(2))
