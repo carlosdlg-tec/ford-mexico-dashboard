@@ -27,8 +27,13 @@ st.set_page_config(
 )
 
 HERE = Path(__file__).resolve().parent
+# Cleaned tables written by prepare_data.py (downloads and cleans the INEGI RAIAVL open data)
+CLEAN_SALES = HERE / "data" / "raiavl_venta_2015_2025.csv.gz"
+CLEAN_HEV = HERE / "data" / "raiavl_hibrido_2016_2025.csv.gz"
+# Fallback: the Excel master workbook (sheets "Datos" and "Datos_HEV" hold the same tables)
 FILE = "INEGI_Auto_Ventas_Maestro_2015_2025.xlsx"
 DATA = next((p / FILE for p in (HERE, HERE.parent, HERE / "data") if (p / FILE).exists()), HERE.parent / FILE)
+USE_CLEAN = CLEAN_SALES.exists() and CLEAN_HEV.exists()
 LOGO = HERE / "ford_logo.svg"  # Ford oval, Wikimedia Commons; trademark of Ford Motor Company
 LOGO_SRC = f"data:image/svg+xml;base64,{base64.b64encode(LOGO.read_bytes()).decode()}" if LOGO.exists() else ""
 
@@ -160,11 +165,13 @@ st.html(CSS)
 # Data
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Loading INEGI RAIAVL data…")
-def load_data(path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
-    d = pd.read_excel(
-        path, sheet_name="Datos",
-        usecols=["ANIO", "ID_MES", "MARCA", "MODELO", "TIPO", "SEGMENTO", "PAIS_ORIGEN", "UNI_VEH"],
-    )
+def load_data(use_clean: bool, stamp: float) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Read the cleaned CSVs from prepare_data.py, or the Excel master if they are missing.
+    `stamp` (file modified time) refreshes the cache when the data is rebuilt."""
+    def read(sheet: str, csv: Path, cols: list[str]) -> pd.DataFrame:
+        return pd.read_csv(csv, usecols=cols) if use_clean else pd.read_excel(DATA, sheet_name=sheet, usecols=cols)
+
+    d = read("Datos", CLEAN_SALES, ["ANIO", "ID_MES", "MARCA", "MODELO", "TIPO", "SEGMENTO", "PAIS_ORIGEN", "UNI_VEH"])
     d = d.rename(columns={"ANIO": "year", "ID_MES": "month", "MODELO": "model", "UNI_VEH": "units"})
     d["brand"] = d["MARCA"].map(BRAND_NAME).fillna(d["MARCA"])
     d["segment"] = d["SEGMENTO"].map(SEG_EN).fillna(d["SEGMENTO"])
@@ -173,20 +180,18 @@ def load_data(path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     d["date"] = pd.to_datetime(dict(year=d["year"], month=d["month"], day=1))
     d = d[["year", "month", "date", "brand", "model", "type", "segment", "country", "units"]]
 
-    h = pd.read_excel(
-        path, sheet_name="Datos_HEV",
-        usecols=["ANIO", "ID_MES", "VEH_ELECTR", "VEH_HIBRIDAS_PLUGIN", "VEH_HIBRIDAS"],
-    )
+    h = read("Datos_HEV", CLEAN_HEV, ["ANIO", "ID_MES", "VEH_ELECTR", "VEH_HIBRIDAS_PLUGIN", "VEH_HIBRIDAS"])
     h = h.groupby(["ANIO", "ID_MES"], as_index=False).sum()
     h.columns = ["year", "month", "Electric (BEV)", "Plug-in (PHEV)", "Hybrid (HEV)"]
     return d, h
 
 
-if not DATA.exists():
-    st.error(f"Data file not found. Place **{FILE}** next to app.py or in the repository root.")
+if not USE_CLEAN and not DATA.exists():
+    st.error("Data not found. Run `python prepare_data.py` to download and clean the INEGI tables, "
+             f"or place **{FILE}** next to app.py.")
     st.stop()
 
-df, hev = load_data(str(DATA))
+df, hev = load_data(USE_CLEAN, (CLEAN_SALES if USE_CLEAN else DATA).stat().st_mtime)
 YEARS = sorted(df["year"].unique().tolist())
 FIRST, LAST = YEARS[0], YEARS[-1]
 FORD_KEY = "Ford"

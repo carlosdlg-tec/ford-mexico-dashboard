@@ -15,6 +15,7 @@ Streamlit dashboard for a strategy review of Ford in the Mexican light-vehicle m
 
 ```powershell
 python -m pip install -r requirements.txt
+python prepare_data.py
 python -m streamlit run app.py
 ```
 
@@ -24,7 +25,16 @@ Run it from the repository root so Streamlit picks up the Ford theme in `.stream
 
 ## Data
 
-The app reads `INEGI_Auto_Ventas_Maestro_2015_2025.xlsx` (sheets `Datos` and `Datos_HEV`) which is included at the repository root.
+`prepare_data.py` downloads two INEGI RAIAVL open-data zips (monthly light-vehicle sales, and monthly hybrid/EV sales by state) into `data/raw/`, cleans them with pandas and writes the two tables the app reads:
+
+| File | Rows | What it holds |
+|---|---|---|
+| `data/raiavl_venta_2015_2025.csv.gz` | one per year, month, brand, model, segment and country of origin | units sold, 2015–2025 |
+| `data/raiavl_hibrido_2016_2025.csv.gz` | one per year, month and state | BEV, PHEV and HEV units, 2016–2025 |
+
+Cleaning steps: stack the one-file-per-year CSVs (UTF-8), drop the two constant columns (`PROD_EST`, `COBERTURA`), trim stray spaces in names, add month, country and state names from INEGI's catalogs, add a date column, drop rows with 0 units and keep negative rows (INEGI corrections). The script checks that no units are lost and every code matches a catalog entry. Run `python prepare_data.py --refresh` to pull INEGI's latest revision.
+
+If the cleaned files are missing, the app falls back to `INEGI_Auto_Ventas_Maestro_2015_2025.xlsx` (sheets `Datos` and `Datos_HEV`).
 
 ## Deploy on Streamlit Community Cloud
 
