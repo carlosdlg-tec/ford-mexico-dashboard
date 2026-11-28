@@ -269,7 +269,7 @@ def end_labels(fig: go.Figure, pts: list[tuple], h: int, ymax: float, ymin: floa
                            yshift=py - (y - ymin) * ppu, font=dict(size=12, color=INK if bold else INK2))
 
 
-def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, xmap=None, **kw) -> None:
+def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, xmap=None, center: bool = False, **kw) -> None:
     """Shade COVID-19 (2020) and the semiconductor shortage (2021 - mid-2023).
     xmap converts annual edges (e.g. 2019.5) to another axis's coordinates, such as a multi-category axis."""
     if not SHOW_BANDS:
@@ -287,7 +287,9 @@ def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, xmap=None, 
             continue
         # Both labels on the top row: COVID-19 ends at its band's right edge and Chip shortage starts at its
         # band's left edge, so they meet at the shared boundary and never overlap, even on narrow charts.
-        extra = dict(annotation_text=t, annotation_position="top right" if t == "COVID-19" else "top left",
+        # center=True (wide charts): each label centred over its own band instead
+        pos = "top" if center else ("top right" if t == "COVID-19" else "top left")
+        extra = dict(annotation_text=t, annotation_position=pos,
                      annotation=dict(font=dict(size=11, color=MUTED))) if labels else {}
         if xmap and mode == "annual":
             a, b = xmap(a), xmap(b)
@@ -524,7 +526,7 @@ with t1:
         style(fig, 400, hover="closest"); fig.update_layout(barmode="stack", legend_traceorder="normal", bargap=0.18)
         fig.update_xaxes(tickfont=dict(size=11, color=MUTED))
         # two bars per year: year y sits at category positions 2(y-Y0) and 2(y-Y0)+1
-        bands(fig, xmap=lambda e: 2 * (e - Y0) + 0.5); car_exit(fig, xmap=lambda e: 2 * (e - Y0) + 0.5)
+        bands(fig, xmap=lambda e: 2 * (e - Y0) + 0.5, center=True); car_exit(fig, xmap=lambda e: 2 * (e - Y0) + 0.5)
         fig.update_yaxes(range=[0, tot.max() * 1.15])
     else:
         for cname, col in CO_SHOW.items():
@@ -537,7 +539,7 @@ with t1:
             fig.add_annotation(x=Y0, y=co.loc[Y0, "Mexico"], text=f"<b>{fmt_k(co.loc[Y0, 'Mexico'])}</b>", showarrow=False,
                                yshift=16, font=dict(size=12, color=INK))
         style(fig, 380); fig.update_layout(legend=dict(traceorder="normal"))
-        year_axis(fig, Y0, Y1); bands(fig); car_exit(fig)
+        year_axis(fig, Y0, Y1); bands(fig, center=True); car_exit(fig)
         fig.update_xaxes(range=[Y0 - 0.4, Y1 + 0.9]); fig.update_yaxes(range=[0, co.max().max() * 1.15])
     show(fig)
     if hidden:
