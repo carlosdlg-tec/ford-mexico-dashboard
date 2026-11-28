@@ -285,8 +285,10 @@ def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, xmap=None, 
     for (a, b, t, on), c in zip(spans, (BAND_COVID, BAND_CHIP)):
         if not on:
             continue
-        extra = dict(annotation_text=t, annotation_position="top left",
-                     annotation=dict(yshift=0 if t == "COVID-19" else -15, font=dict(size=11, color=MUTED))) if labels else {}
+        # Both labels on the top row: COVID-19 ends at its band's right edge and Chip shortage starts at its
+        # band's left edge, so they meet at the shared boundary and never overlap, even on narrow charts.
+        extra = dict(annotation_text=t, annotation_position="top right" if t == "COVID-19" else "top left",
+                     annotation=dict(font=dict(size=11, color=MUTED))) if labels else {}
         if xmap and mode == "annual":
             a, b = xmap(a), xmap(b)
         fig.add_vrect(x0=a, x1=b, fillcolor=c, line_width=0, layer="below", **extra, **kw)
