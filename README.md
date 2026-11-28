@@ -9,7 +9,7 @@ Streamlit dashboard for a strategy review of Ford in the Mexican light-vehicle m
 | **03 · Customer preferences** | CAGR by segment for the selected period, segment CAGR heatmap across the cycle (Pre-COVID 2015–19, COVID + chips 2019–22, Recovery 2022–25, Decade 2015–25), where-to-play matrix (segment CAGR vs Ford units sold, bubble = segment size), growth index and CAGR for emerging segments (minivans, hybrids, PHEV, BEV), electrified sales and penetration |
 | **Recommendations** | 3 moves, each with a backing chart: build more (and more models) in Mexico to price against Chinese brands, extend Territory with EV and hybrid options, and a new minivan and sport car |
 
-**Global controls (sidebar):** quick-range presets (Pre-COVID, COVID + chips, Recovery…), an analysis-period slider that drives every chart and CAGR, and a toggle that shades COVID-19 (Mar–Dec 2020) and the chip shortage (2021 to mid-2023). The segment CAGR heatmap uses fixed windows, so it doesn't follow the slider.
+**Global controls (sidebar):** quick-range presets (Pre-COVID, COVID + chips, Recovery…), an analysis-period slider that drives every chart and CAGR, and a toggle that shades COVID-19 (Mar–Dec 2020) and the chip shortage (2021 to mid-2023), plus a toggle that marks 25 Apr 2018, when Ford announced it would stop selling subcompact and compact cars in North America, on the Ford today charts. The segment CAGR heatmap uses fixed windows, so it doesn't follow the slider.
 
 ## Run locally
 
