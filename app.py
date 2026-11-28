@@ -128,6 +128,8 @@ div[data-testid="stMetric"] {{background: #fff; border-radius: 12px;}}
 /* KPI boxes in a row share one height, even when one has no delta line */
 div[data-testid="stColumn"] > div[data-testid="stVerticalBlock"] > div[data-testid="stElementContainer"]:only-child:has(> div[data-testid="stMetric"]) {{flex: 1 1 auto;}}
 div[data-testid="stElementContainer"] > div[data-testid="stMetric"] {{height: 100%;}}
+/* Head-to-head KPIs at 75% of the standard size (text, padding and height), still spanning their column */
+.st-key-h2h_kpis div[data-testid="stMetric"] {{zoom: .75;}}
 div[data-testid="stMetricValue"] {{color: {NAVY}; font-weight: 700;}}
 div[data-testid="stMetricLabel"] p {{color: {MUTED}; font-size: 13px; text-transform: uppercase; letter-spacing: .05em;}}
 .stTabs [data-baseweb="tab-list"] {{gap: 4px; border-bottom: 1px solid {GRID};}}
@@ -591,7 +593,7 @@ with t2:
     COL_A, COL_B = FORD, RIVAL
 
     uA, uB = by_year(dA), by_year(dB)
-    k = st.columns(4)
+    k = st.container(key="h2h_kpis").columns(4)  # keyed so CSS can draw these four KPIs at 75% size
     k[0].metric(f"{A} · {Y1}", fmt_k(uA[Y1]), f"CAGR {fmt_pct(cagr(uA[Y0], uA[Y1], N))}", delta_color="off", delta_arrow="off", border=True)
     k[1].metric(f"{B} · {Y1}", fmt_k(uB[Y1]), f"CAGR {fmt_pct(cagr(uB[Y0], uB[Y1], N))}", delta_color="off", delta_arrow="off", border=True)
     k[2].metric(f"Share {Y1}: {A}", f"{uA[Y1] / market[Y1] * 100:.1f}%", f"{(uA[Y1]/market[Y1]-uA[Y0]/market[Y0])*100:+.1f} pp vs {Y0}", border=True)
