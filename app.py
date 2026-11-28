@@ -295,16 +295,16 @@ def bands(fig: go.Figure, mode: str = "annual", labels: bool = True, xmap=None, 
 # Ford announced on 25 Apr 2018 it would stop selling cars (subcompact/compact) in North America.
 # On an annual axis a year y spans y-0.5 .. y+0.5, so that date sits ~31% into 2018.
 CAR_EXIT = 2017.5 + (pd.Timestamp("2018-04-25").dayofyear - 1) / 365
+EXIT_GREY = "#A3A8B3"
 
 
-def car_exit(fig: go.Figure, short: bool = False, xmap=None) -> None:
+def car_exit(fig: go.Figure, xmap=None) -> None:
     """Dashed marker for Ford's car-exit announcement (Apr 2018) on Ford timelines."""
     if not SHOW_EXIT or not (Y0 <= 2018 <= Y1):
         return
-    fig.add_vline(x=xmap(CAR_EXIT) if xmap else CAR_EXIT, line=dict(color=INK2, width=1.5, dash="dash"),
-                  annotation_text="Car exit · Apr '18" if short else "Ford exits cars · Apr 2018",
-                  annotation_position="top left",
-                  annotation=dict(font=dict(size=11, color=INK2), bgcolor="rgba(255,255,255,.85)"))
+    fig.add_vline(x=xmap(CAR_EXIT) if xmap else CAR_EXIT, line=dict(color=EXIT_GREY, width=1.5, dash="dash"),
+                  layer="below", annotation_text="Apr 2018", annotation_position="top left",
+                  annotation=dict(font=dict(size=11, color=MUTED), bgcolor="rgba(255,255,255,.85)"))
 
 
 def show(fig: go.Figure, key: str | None = None) -> None:
@@ -353,7 +353,7 @@ with st.sidebar:
     st.html(f"""<div class="legend-inline" style="flex-direction:column;gap:6px">
       <span><i style="background:{BAND_COVID};border:1px solid {AXIS}"></i>COVID-19 · Mar–Dec 2020</span>
       <span><i style="background:{BAND_CHIP};border:1px solid {AXIS}"></i>Chip shortage · 2021–mid 2023</span>
-      <span><i style="background:none;height:0;border-radius:0;border-top:2px dashed {INK2};vertical-align:4px"></i>Ford exits cars · Apr 2018</span></div>""")
+      <span><i style="background:none;height:0;border-radius:0;border-top:2px dashed {EXIT_GREY};vertical-align:4px"></i>Ford exits cars · Apr 2018</span></div>""")
     st.divider()
     st.caption("Source: INEGI RAIAVL, light-vehicle retail sales in Mexico, 2015–2025 (units). "
                "Hybrid/EV series start in 2016 and carry no brand detail.")
@@ -445,7 +445,7 @@ with t1:
             fig.add_annotation(x=y, y=sh[y], text=f"<b>{sh[y]:.1f}%</b>", showarrow=False, yshift=16,
                                font=dict(color=INK, size=12.5))
         style(fig, 340, legend=False, hover="closest"); year_axis(fig, Y0, Y1, step=2 if N > 6 else 1); bands(fig)
-        car_exit(fig, short=True)
+        car_exit(fig)
         fig.update_yaxes(ticksuffix="%", range=[0, max(sh.max() * 1.25, 1)])
         show(fig)
 
