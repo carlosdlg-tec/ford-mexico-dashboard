@@ -511,14 +511,21 @@ with t1:
     fig = go.Figure()
     if co_mode == MX_CN_SEG:
         # One Mexico bar and one China bar per year, each stacked by car segment
-        mc = (ford_df[ford_df["country"].isin(["Mexico", "China"]) & ford_df["year"].between(Y0, Y1)]
-              .pivot_table(index=["year", "country"], columns="segment", values="units", aggfunc="sum")
+        mxcn = ford_df[ford_df["country"].isin(["Mexico", "China"]) & ford_df["year"].between(Y0, Y1)]
+        mc = (mxcn.pivot_table(index=["year", "country"], columns="segment", values="units", aggfunc="sum")
               .reindex(pd.MultiIndex.from_product([yrs, ["Mexico", "China"]]), fill_value=0).fillna(0))
+        # Hover lists the models behind each block, largest first
+        by_model = mxcn.groupby(["year", "country", "segment", "model"])["units"].sum()
+        by_model = by_model[by_model > 0].sort_values(ascending=False)
+        models = {k: "<br>".join(f"  {m}: {v:,.0f}" for m, v in g.droplevel([0, 1, 2]).items())
+                  for k, g in by_model.groupby(level=[0, 1, 2])}
         x = [[str(y) for y, _ in mc.index], ["MX" if c == "Mexico" else "CN" for _, c in mc.index]]
         for sname in [s for s in SEG_ORDER if s in mc.columns and mc[s].sum() > 0]:
             fig.add_bar(x=x, y=mc[sname].values, name=sname, marker=dict(color=SEG_COL[sname], line=dict(color="white", width=1)),
-                        customdata=[c for _, c in mc.index],
-                        hovertemplate=f"%{{customdata}} · {sname}: %{{y:,.0f}}<extra></extra>")
+                        customdata=[[y, f"{c}-built", models.get((y, c, sname), "")] for y, c in mc.index],
+                        hoverlabel=dict(align="left"),
+                        hovertemplate=(f"<b>%{{customdata[0]}} · %{{customdata[1]}} · {sname}: %{{y:,.0f}}</b>"
+                                       "<br>%{customdata[2]}<extra></extra>"))
         tot = mc.sum(axis=1)
         fig.add_scatter(x=x, y=tot.values, mode="text", text=[fmt_k(v) if v else "" for v in tot.values],
                         textposition="top center", textfont=dict(size=10.5, color=INK2), showlegend=False, hoverinfo="skip",
